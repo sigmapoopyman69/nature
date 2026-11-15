@@ -31,7 +31,8 @@
     .topbar{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:28px 4.5vw}
     .brand{display:flex;align-items:center;gap:11px;color:#f2e6d9;text-decoration:none;font-size:13px;letter-spacing:.19em;text-transform:uppercase;font-weight:700}
     .brand-mark{width:29px;height:29px;display:grid;place-items:center;border:1px solid rgba(235,161,99,.45);border-radius:50%;color:#e9a05e;font-size:16px}
-    .home-button{display:inline-flex;align-items:center;gap:8px;padding:10px 15px;border:1px solid rgba(255,232,210,.2);border-radius:999px;background:rgba(25,21,19,.42);color:#f2e6d9;text-decoration:none;font-size:11px;letter-spacing:.08em;transition:background .2s,border-color .2s}\n    .home-button:hover{background:rgba(190,111,62,.2);border-color:rgba(231,153,91,.55)}\n    .settings-link{display:block;margin:19px auto 0;border:0;background:transparent;color:rgba(246,232,216,.48);font-size:10px;letter-spacing:.08em;cursor:pointer}\n    .settings-link:hover{color:#e6a064}
+    .home-button{display:inline-flex;align-items:center;gap:8px;padding:10px 15px;border:1px solid rgba(255,232,210,.2);border-radius:999px;background:rgba(25,21,19,.42);color:#f2e6d9;text-decoration:none;font-size:11px;letter-spacing:.08em;transition:background .2s,border-color .2s}\n    .home-button:hover,.settings-button:hover{background:rgba(190,111,62,.2);border-color:rgba(231,153,91,.55)}
+    .settings-button{display:inline-flex;align-items:center;gap:8px;padding:10px 15px;border:1px solid rgba(255,232,210,.2);border-radius:999px;background:rgba(25,21,19,.42);color:#f2e6d9;font-size:11px;letter-spacing:.08em;cursor:pointer;transition:background .2s,border-color .2s}\n    .settings-link{display:block;margin:19px auto 0;border:0;background:transparent;color:rgba(246,232,216,.48);font-size:10px;letter-spacing:.08em;cursor:pointer}\n    .settings-link:hover{color:#e6a064}
     main{position:relative;z-index:2;min-height:calc(100vh - 90px);display:flex;align-items:center;justify-content:center;padding:0 22px 8vh}
     .content{width:min(690px,100%);text-align:center;margin-top:-3vh}
     h1{font-family:"Italianno",cursive;font-weight:400;font-size:clamp(104px,17vw,178px);line-height:.82;letter-spacing:.005em;color:#f7e9d9;text-shadow:0 4px 35px rgba(0,0,0,.35);margin:9px 0 24px}
@@ -76,8 +77,8 @@
   </div>
 
   <header class="topbar">
-    <a class="brand" href="./" aria-label="Autumn home"><span class="brand-mark">✦</span><span>autumn</span></a>
     <a class="home-button" href="./" aria-label="Home">⌂ <span>home</span></a>
+    <button class="settings-button" type="button" id="settingsToggle" aria-label="Open settings">⚙ <span>settings</span></button>
   </header>
 
   <main>
@@ -94,7 +95,7 @@
         <button type="button" data-url="https://www.youtube.com">youtube</button>
         <button type="button" data-url="https://www.reddit.com">reddit</button>
       </div>
-      <button type="button" class="settings-link" id="settingsToggle">connection settings</button>
+
     </section>
   </main>
 
