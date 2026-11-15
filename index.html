@@ -120,7 +120,7 @@
     const provider = document.getElementById("provider");
     const panel = document.getElementById("settingsPanel");
     const wispInput = document.getElementById("wispUrl");
-    const savedWisp = localStorage.getItem("autumn-wisp-url") || "wss://autumn.freesrv.com:14497/wisp/";
+    const savedWisp = (() => { const previous = localStorage.getItem("autumn-wisp-url"); const next = previous && !previous.includes("autumn.wispbyte.app") ? previous : "wss://autumn.freesrv.com:14497/wisp/"; localStorage.setItem("autumn-wisp-url", next); return next; })();
     provider.value = localStorage.getItem("autumn-search-provider") || "brave";
     provider.addEventListener("change", () => localStorage.setItem("autumn-search-provider", provider.value));
     wispInput.value = savedWisp;
