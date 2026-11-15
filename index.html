@@ -109,7 +109,7 @@
     <h2>connection settings</h2>
     <p>add your secure wisp websocket address here once the backend is running.</p>
     <label for="wispUrl">wisp websocket url</label>
-    <input id="wispUrl" type="url" placeholder="wss://your-server.example/wisp/">
+    <input id="wispUrl" type="url" placeholder="wss://autumn.freesrv.com:14497/wisp/">
     <div class="settings-actions"><button type="button" id="closeSettings">close</button><button type="button" class="save" id="saveSettings">save address</button></div>
   </section>
 
@@ -120,7 +120,7 @@
     const provider = document.getElementById("provider");
     const panel = document.getElementById("settingsPanel");
     const wispInput = document.getElementById("wispUrl");
-    const savedWisp = localStorage.getItem("autumn-wisp-url") || "";
+    const savedWisp = localStorage.getItem("autumn-wisp-url") || "wss://autumn.freesrv.com:14497/wisp/";
     provider.value = localStorage.getItem("autumn-search-provider") || "brave";
     provider.addEventListener("change", () => localStorage.setItem("autumn-search-provider", provider.value));
     wispInput.value = savedWisp;
