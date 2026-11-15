@@ -31,8 +31,11 @@
     .topbar{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:28px 4.5vw}
     .brand{display:flex;align-items:center;gap:11px;color:#f2e6d9;text-decoration:none;font-size:13px;letter-spacing:.19em;text-transform:uppercase;font-weight:700}
     .brand-mark{width:29px;height:29px;display:grid;place-items:center;border:1px solid rgba(235,161,99,.45);border-radius:50%;color:#e9a05e;font-size:16px}
-    .home-button{display:inline-flex;align-items:center;gap:8px;padding:10px 15px;border:1px solid rgba(255,232,210,.2);border-radius:999px;background:rgba(25,21,19,.42);color:#f2e6d9;text-decoration:none;font-size:11px;letter-spacing:.08em;transition:background .2s,border-color .2s}\n    .home-button:hover,.settings-button:hover{background:rgba(190,111,62,.2);border-color:rgba(231,153,91,.55)}
-    .settings-button{display:inline-flex;align-items:center;gap:8px;padding:10px 15px;border:1px solid rgba(255,232,210,.2);border-radius:999px;background:rgba(25,21,19,.42);color:#f2e6d9;font-size:11px;letter-spacing:.08em;cursor:pointer;transition:background .2s,border-color .2s}\n    .settings-link{display:block;margin:19px auto 0;border:0;background:transparent;color:rgba(246,232,216,.48);font-size:10px;letter-spacing:.08em;cursor:pointer}\n    .settings-link:hover{color:#e6a064}
+    .home-button{display:inline-flex;align-items:center;gap:8px;padding:10px 15px;border:1px solid rgba(255,232,210,.2);border-radius:999px;background:rgba(25,21,19,.42);color:#f2e6d9;text-decoration:none;font-size:11px;letter-spacing:.08em;transition:background .2s,border-color .2s}
+    .home-button:hover,.settings-button:hover{background:rgba(190,111,62,.2);border-color:rgba(231,153,91,.55)}
+    .settings-button{display:inline-flex;align-items:center;gap:8px;padding:10px 15px;border:1px solid rgba(255,232,210,.2);border-radius:999px;background:rgba(25,21,19,.42);color:#f2e6d9;font-size:11px;letter-spacing:.08em;cursor:pointer;transition:background .2s,border-color .2s}
+    .settings-link{display:block;margin:19px auto 0;border:0;background:transparent;color:rgba(246,232,216,.48);font-size:10px;letter-spacing:.08em;cursor:pointer}
+    .settings-link:hover{color:#e6a064}
     main{position:relative;z-index:2;min-height:calc(100vh - 90px);display:flex;align-items:center;justify-content:center;padding:0 22px 8vh}
     .content{width:min(690px,100%);text-align:center;margin-top:-3vh}
     h1{font-family:"Italianno",cursive;font-weight:400;font-size:clamp(104px,17vw,178px);line-height:.82;letter-spacing:.005em;color:#f7e9d9;text-shadow:0 4px 35px rgba(0,0,0,.35);margin:9px 0 24px}
@@ -40,6 +43,8 @@
     .search-shell:focus-within{border-color:rgba(231,153,91,.72);transform:translateY(-2px)}
     .search-icon{width:19px;height:19px;flex:none;color:#d49a6a}
     #address{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#fff1e4;font-size:14px;padding:12px 2px}
+    #provider{max-width:132px;border:1px solid rgba(255,232,210,.16);border-radius:9px;background:#211a16;color:#f2e6d9;padding:9px 7px;font-size:11px;outline:none}
+    #provider:focus{border-color:#d18a55}
     #address::placeholder{color:rgba(238,221,205,.45)}
     .go{border:0;border-radius:11px;padding:13px 22px;background:linear-gradient(135deg,#e6a064,#c66c3c);color:#21140e;font-weight:700;font-size:12px;letter-spacing:.04em;cursor:pointer;box-shadow:0 5px 20px rgba(183,91,42,.22);transition:filter .2s,transform .2s}
     .go:hover{filter:brightness(1.1);transform:translateY(-1px)}.go:active{transform:translateY(0)}
@@ -87,9 +92,10 @@
       <form id="searchForm" class="search-shell" autocomplete="off">
         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
         <input id="address" type="text" placeholder="search the web or enter a url..." aria-label="Search the web or enter a URL" spellcheck="false">
+        <select id="provider" aria-label="search provider"><option value="brave">brave</option><option value="duckduckgo">duckduckgo</option><option value="google">google</option><option value="bing">bing</option></select>
         <button class="go" type="submit">explore ↗</button>
       </form>
-      <p class="hint" id="status" role="status">the gateway is waiting for its wisp connection.</p>
+      <p class="hint" id="status" role="status">choose a search engine and explore the web.</p>
       <div class="quick-links" aria-label="Quick links">
         <button type="button" data-url="https://www.wikipedia.org">wikipedia</button>
         <button type="button" data-url="https://www.youtube.com">youtube</button>
@@ -111,9 +117,12 @@
     const form = document.getElementById("searchForm");
     const address = document.getElementById("address");
     const status = document.getElementById("status");
+    const provider = document.getElementById("provider");
     const panel = document.getElementById("settingsPanel");
     const wispInput = document.getElementById("wispUrl");
     const savedWisp = localStorage.getItem("autumn-wisp-url") || "";
+    provider.value = localStorage.getItem("autumn-search-provider") || "brave";
+    provider.addEventListener("change", () => localStorage.setItem("autumn-search-provider", provider.value));
     wispInput.value = savedWisp;
     document.getElementById("settingsToggle").addEventListener("click", () => panel.classList.toggle("open"));
     document.getElementById("closeSettings").addEventListener("click", () => panel.classList.remove("open"));
@@ -127,22 +136,32 @@
       status.textContent = value ? "wisp address saved locally. proxy engine setup is the next step." : "wisp address cleared.";
       panel.classList.remove("open");
     });
-    function normalizeInput(value) {
-      const text = value.trim();
-      if (!text) return "";
-      if (/^https?:\/\//i.test(text)) return text;
-      if (/^[\w-]+\.[a-z]{2,}([/:?#]|$)/i.test(text)) return "https://" + text;
-      return "https://www.google.com/search?q=" + encodeURIComponent(text);
+    function isWebAddress(value) {
+      return /^(https?:\/\/)/i.test(value) ||
+        /^[a-z0-9-]+(\.[a-z0-9-]+)+([/:?#]|$)/i.test(value);
+    }
+    function searchUrl(query) {
+      const q = encodeURIComponent(query);
+      const engines = {
+        brave: "https://search.brave.com/search?q=" + q,
+        duckduckgo: "https://duckduckgo.com/?q=" + q,
+        google: "https://www.google.com/search?q=" + q,
+        bing: "https://www.bing.com/search?q=" + q
+      };
+      return engines[provider.value] || engines.brave;
     }
     form.addEventListener("submit", event => {
       event.preventDefault();
-      const target = normalizeInput(address.value);
-      if (!target) { status.textContent = "enter a search or website address to begin."; return; }
-      if (!localStorage.getItem("autumn-wisp-url")) {
-        status.textContent = "frontend ready — add your Wisp server in settings, then we can connect the proxy engine.";
+      const value = address.value.trim();
+      if (!value) {
+        status.textContent = "enter a search or website address to begin.";
         return;
       }
-      status.textContent = "Wisp address saved. The browser proxy engine still needs to be wired to this page.";
+      const target = isWebAddress(value)
+        ? (/^https?:\/\//i.test(value) ? value : "https://" + value)
+        : searchUrl(value);
+      status.textContent = "opening with " + provider.value + "...";
+      window.location.href = target;
     });
     document.querySelectorAll("[data-url]").forEach(button => button.addEventListener("click", () => {
       address.value = button.dataset.url;
