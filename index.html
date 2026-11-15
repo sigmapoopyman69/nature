@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#171311">
-  <meta name="description" content="Autumn — a quiet place to explore the web.">
+  <meta name="description" content="Autumn — explore the web.">
   <title>Autumn</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,13 +30,10 @@
     .topbar{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:28px 4.5vw}
     .brand{display:flex;align-items:center;gap:11px;color:#f2e6d9;text-decoration:none;font-size:13px;letter-spacing:.19em;text-transform:uppercase;font-weight:700}
     .brand-mark{width:29px;height:29px;display:grid;place-items:center;border:1px solid rgba(235,161,99,.45);border-radius:50%;color:#e9a05e;font-size:16px}
-    .top-note{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:rgba(242,230,217,.55)}
+    .home-button{display:inline-flex;align-items:center;gap:8px;padding:10px 15px;border:1px solid rgba(255,232,210,.2);border-radius:999px;background:rgba(25,21,19,.42);color:#f2e6d9;text-decoration:none;font-size:11px;letter-spacing:.08em;transition:background .2s,border-color .2s}\n    .home-button:hover{background:rgba(190,111,62,.2);border-color:rgba(231,153,91,.55)}\n    .settings-link{display:block;margin:19px auto 0;border:0;background:transparent;color:rgba(246,232,216,.48);font-size:10px;letter-spacing:.08em;cursor:pointer}\n    .settings-link:hover{color:#e6a064}
     main{position:relative;z-index:2;min-height:calc(100vh - 90px);display:flex;align-items:center;justify-content:center;padding:0 22px 8vh}
     .content{width:min(690px,100%);text-align:center;margin-top:-3vh}
-    .eyebrow{display:flex;align-items:center;justify-content:center;gap:12px;color:#d6a77f;font-size:10px;font-weight:600;letter-spacing:.29em;text-transform:uppercase;margin-bottom:0}
-    .eyebrow:before,.eyebrow:after{content:"";height:1px;width:32px;background:rgba(220,154,99,.55)}
     h1{font-family:"Italianno",cursive;font-weight:400;font-size:clamp(104px,17vw,178px);line-height:.82;letter-spacing:.005em;color:#f7e9d9;text-shadow:0 4px 35px rgba(0,0,0,.35);margin:9px 0 24px}
-    .subtitle{font-size:14px;line-height:1.8;color:rgba(246,238,228,.72);letter-spacing:.035em;margin:0 auto 35px;max-width:420px}
     .search-shell{display:flex;align-items:center;gap:10px;padding:8px 9px 8px 19px;border:1px solid rgba(255,232,210,.23);border-radius:16px;background:rgba(24,20,18,.66);box-shadow:0 18px 70px rgba(0,0,0,.3),inset 0 1px rgba(255,255,255,.06);backdrop-filter:blur(18px);transition:border-color .2s,transform .2s}
     .search-shell:focus-within{border-color:rgba(231,153,91,.72);transform:translateY(-2px)}
     .search-icon{width:19px;height:19px;flex:none;color:#d49a6a}
@@ -48,15 +45,13 @@
     .quick-links{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:27px}
     .quick-links button{background:rgba(27,22,19,.32);border:1px solid rgba(255,230,207,.16);border-radius:999px;color:rgba(246,232,216,.78);padding:9px 15px;font-size:11px;cursor:pointer;transition:background .2s,border-color .2s}
     .quick-links button:hover{background:rgba(190,111,62,.2);border-color:rgba(231,153,91,.5)}
-    footer{position:fixed;z-index:2;bottom:24px;left:0;right:0;text-align:center;color:rgba(238,222,205,.38);font-size:9px;letter-spacing:.2em;text-transform:uppercase}
     .settings{position:fixed;z-index:5;right:4.5vw;top:82px;width:min(330px,calc(100vw - 36px));padding:21px;border:1px solid var(--line);border-radius:16px;background:rgba(25,21,19,.94);box-shadow:0 18px 60px #0008;backdrop-filter:blur(20px);display:none}
     .settings.open{display:block}.settings h2{font-size:13px;letter-spacing:.08em;margin:0 0 8px}.settings p{font-size:11px;color:var(--muted);line-height:1.6;margin:0 0 15px}
     .settings label{display:block;font-size:10px;color:#d7b99e;margin-bottom:7px}
     .settings input{width:100%;border:1px solid var(--line);border-radius:9px;background:#171311;color:var(--cream);padding:11px;font-size:12px;outline:none}
     .settings input:focus{border-color:#d18a55}.settings-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:13px}
     .settings-actions button{border:1px solid var(--line);background:transparent;color:var(--cream);border-radius:8px;padding:8px 12px;font-size:10px;cursor:pointer}.settings-actions .save{background:#c87946;border-color:#c87946;color:#1d120d;font-weight:700}
-    .gear{border:1px solid var(--line);border-radius:50%;width:35px;height:35px;background:rgba(25,21,19,.3);color:#f2e3d5;cursor:pointer;font-size:15px}
-    @media(max-width:600px){.topbar{padding:20px 20px}.top-note{display:none}main{min-height:calc(100vh - 72px);padding-bottom:10vh}.content{margin-top:-7vh}.subtitle{font-size:12px;margin-bottom:27px}.search-shell{gap:7px;padding-left:13px}.go{padding:13px 16px}#address{font-size:12px}.moon{right:-2%;top:13%;width:180px;opacity:.75}.tree-line{height:48%}footer{bottom:15px;font-size:8px}}
+    @media(max-width:600px){.topbar{padding:20px 20px}main{min-height:calc(100vh - 72px);padding-bottom:10vh}.content{margin-top:-7vh}.search-shell{gap:7px;padding-left:13px}.go{padding:13px 16px}#address{font-size:12px}.moon{right:-2%;top:13%;width:180px;opacity:.75}.tree-line{height:48%}}
     @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
   </style>
 </head>
@@ -66,20 +61,13 @@
     <div class="hills"></div>
     <div class="tree-line">
       <svg viewBox="0 0 1440 620" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
-        <defs><linearGradient id="trunk" x2="0" y2="1"><stop stop-color="#30251e"/><stop offset="1" stop-color="#100d0b"/></linearGradient></defs>
-        <g fill="url(#trunk)">
-          <path d="M-35 620Q25 390 45 180Q57 100 74 15Q83 125 74 226Q105 155 153 92Q124 195 82 272Q67 440 104 620Z"/>
-          <path d="M210 620Q235 390 220 235Q197 154 174 92Q230 142 251 217Q264 130 315 57Q282 165 259 264Q267 430 291 620Z"/>
-          <path d="M1190 620Q1160 390 1190 230Q1215 145 1252 64Q1233 180 1212 275Q1235 430 1270 620Z"/>
-          <path d="M1370 620Q1340 390 1370 205Q1400 118 1445 40Q1418 180 1390 260Q1388 430 1445 620Z"/>
-        </g>
-        <g fill="#17120f">
-          <path d="M0 210Q40 110 110 115Q150 15 230 78Q300 2 360 105Q420 45 470 145Q420 215 350 190Q270 250 195 192Q105 265 0 210Z"/>
-          <path d="M990 190Q1040 70 1110 100Q1160 0 1230 70Q1310 5 1370 110Q1440 60 1480 165Q1410 230 1330 190Q1250 255 1170 192Q1080 255 990 190Z"/>
-          <path d="M80 350Q140 260 220 300Q290 220 360 300Q430 250 490 340Q420 410 330 380Q240 435 160 380Q110 410 80 350Z"/>
-          <path d="M1030 350Q1100 250 1170 300Q1250 215 1320 300Q1400 240 1470 340Q1390 420 1300 380Q1200 440 1120 380Q1060 410 1030 350Z"/>
-        </g>
-        <path d="M0 570Q190 505 360 555T720 540T1080 550T1440 520V620H0Z" fill="#100d0b"/>
+        <defs><linearGradient id="trunk" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#0c0908"/><stop offset=".48" stop-color="#241810"/><stop offset="1" stop-color="#0d0a09"/></linearGradient><linearGradient id="canopy" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#302019"/><stop offset=".55" stop-color="#1d1511"/><stop offset="1" stop-color="#100d0b"/></linearGradient><linearGradient id="farCanopy" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#493023"/><stop offset="1" stop-color="#211711"/></linearGradient><filter id="softTree"><feGaussianBlur stdDeviation="1.8"/></filter></defs>
+        <g opacity=".52" filter="url(#softTree)" fill="url(#farCanopy)"><path d="M130 620Q155 400 130 260Q85 215 80 150Q110 165 137 205Q118 105 165 35Q185 130 177 218Q225 135 272 125Q248 205 192 270Q185 440 220 620Z"/><path d="M1030 620Q1060 410 1040 255Q1000 185 1005 120Q1045 160 1060 205Q1050 95 1105 20Q1125 120 1105 215Q1160 130 1210 115Q1190 205 1135 270Q1125 455 1170 620Z"/></g>
+        <g fill="url(#trunk)"><path d="M-40 620Q5 430 18 250Q28 140 66 18Q70 160 54 278Q80 205 130 150Q105 245 58 330Q55 475 105 620Z"/><path d="M185 620Q220 440 205 300Q185 220 150 155Q205 190 230 270Q248 165 302 82Q274 205 248 325Q250 465 292 620Z"/><path d="M1210 620Q1170 430 1190 280Q1210 195 1255 110Q1238 235 1215 335Q1220 470 1270 620Z"/><path d="M1390 620Q1350 425 1375 250Q1390 150 1445 35Q1420 190 1395 315Q1390 475 1460 620Z"/></g>
+        <g fill="none" stroke="#100c0a" stroke-linecap="round" stroke-width="15"><path d="M48 320Q105 235 160 190M52 275Q15 210 4 150M65 225Q105 135 120 90M215 330Q155 260 120 235M220 270Q280 190 320 165M1210 340Q1160 260 1110 220M1210 280Q1260 205 1300 160M1380 330Q1320 250 1285 225"/></g>
+        <g fill="url(#canopy)"><path d="M0 210Q8 140 65 132Q72 55 145 75Q182 8 245 55Q300 20 342 94Q405 65 438 135Q410 204 345 195Q302 250 230 210Q160 270 95 218Q35 252 0 210Z"/><path d="M70 340Q85 265 150 260Q185 205 240 248Q295 205 350 265Q420 245 458 315Q425 390 350 370Q290 425 220 375Q145 420 100 370Z"/><path d="M970 190Q1005 115 1060 125Q1085 45 1150 70Q1205 0 1260 52Q1325 15 1360 95Q1430 65 1475 145Q1450 215 1380 200Q1320 260 1250 210Q1175 265 1110 212Q1030 255 970 190Z"/><path d="M1000 340Q1035 260 1090 270Q1130 210 1190 250Q1250 195 1300 260Q1370 225 1435 310Q1410 390 1335 375Q1270 430 1200 380Q1125 425 1060 375Z"/></g>
+        <g fill="#382318" opacity=".55"><path d="M30 180Q48 115 95 120Q125 52 172 87Q210 40 255 83Q300 50 330 120Q290 175 240 157Q190 215 140 170Q80 215 30 180Z"/><path d="M1050 170Q1080 95 1120 115Q1165 42 1210 75Q1260 28 1305 85Q1360 40 1400 125Q1370 185 1315 165Q1260 220 1205 175Q1145 220 1095 175Z"/></g>
+        <path d="M0 565Q170 510 340 552T700 540T1050 555T1440 515V620H0Z" fill="#100d0b"/>
       </svg>
     </div>
     <div class="leaf"></div><div class="leaf"></div><div class="leaf"></div><div class="leaf"></div><div class="leaf"></div><div class="leaf"></div>
@@ -88,14 +76,12 @@
 
   <header class="topbar">
     <a class="brand" href="./" aria-label="Autumn home"><span class="brand-mark">✦</span><span>autumn</span></a>
-    <div style="display:flex;align-items:center;gap:15px"><span class="top-note">a quieter corner of the web</span><button class="gear" id="settingsToggle" aria-label="Settings" title="Settings">⚙</button></div>
+    <a class="home-button" href="./" aria-label="Home">⌂ <span>home</span></a>
   </header>
 
   <main>
     <section class="content">
-      <div class="eyebrow">take the scenic route</div>
       <h1>Autumn</h1>
-      <p class="subtitle">A little escape into the open web.<br>Settle in, take your time, and wander.</p>
       <form id="searchForm" class="search-shell" autocomplete="off">
         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
         <input id="address" type="text" placeholder="search the web or enter a url..." aria-label="Search the web or enter a URL" spellcheck="false">
@@ -107,6 +93,7 @@
         <button type="button" data-url="https://www.youtube.com">youtube</button>
         <button type="button" data-url="https://www.reddit.com">reddit</button>
       </div>
+      <button type="button" class="settings-link" id="settingsToggle">connection settings</button>
     </section>
   </main>
 
@@ -117,7 +104,6 @@
     <input id="wispUrl" type="url" placeholder="wss://your-server.example/wisp/">
     <div class="settings-actions"><button type="button" id="closeSettings">close</button><button type="button" class="save" id="saveSettings">save address</button></div>
   </section>
-  <footer>made for slow evenings · est. under the autumn moon</footer>
 
   <script>
     const form = document.getElementById("searchForm");
