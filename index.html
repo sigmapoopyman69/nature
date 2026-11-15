@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#171311">
+  <meta name="description" content="Autumn — a quiet place to explore the web.">
+  <title>Autumn</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Italianno&display=swap" rel="stylesheet">
+  <style>
+    :root{color-scheme:dark;--cream:#f6eee4;--muted:#c1afa0;--orange:#e58a45;--line:rgba(255,235,213,.15);--glass:rgba(26,22,20,.58)}
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;font-family:"DM Sans",sans-serif;background:#171311;color:var(--cream)}
+    body{min-height:100vh;overflow:hidden}
+    button,input{font:inherit}
+    .scene{position:fixed;inset:0;overflow:hidden;background:radial-gradient(ellipse at 78% 24%,rgba(163,78,34,.23),transparent 29%),linear-gradient(180deg,#17151a 0%,#242027 42%,#211914 72%,#120f0d 100%)}
+    .scene:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(12,10,10,.48),rgba(12,10,10,.12) 65%,rgba(12,10,10,.18)),linear-gradient(0deg,rgba(9,8,7,.72),transparent 48%);pointer-events:none}
+    .stars{position:absolute;inset:0;opacity:.6;background-image:radial-gradient(1px 1px at 12% 18%,#f9dfb9 99%,transparent),radial-gradient(1px 1px at 29% 11%,#fff 99%,transparent),radial-gradient(1px 1px at 52% 22%,#f8d7a8 99%,transparent),radial-gradient(1px 1px at 67% 9%,#fff 99%,transparent),radial-gradient(1px 1px at 89% 17%,#fff 99%,transparent),radial-gradient(1px 1px at 44% 36%,#fff 99%,transparent);background-size:100% 100%}
+    .moon{position:absolute;width:clamp(150px,22vw,290px);aspect-ratio:1;right:11%;top:8%;border-radius:50%;background:radial-gradient(circle at 34% 30%,#ffd89a 0%,#f7b45f 42%,#d87935 76%,#9c4928 100%);box-shadow:0 0 38px rgba(237,137,64,.26),0 0 115px rgba(221,112,48,.2),0 0 210px rgba(221,112,48,.1);opacity:.94}
+    .moon:before{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(ellipse at 63% 37%,rgba(133,72,39,.16) 0 8%,transparent 9%),radial-gradient(ellipse at 35% 64%,rgba(133,72,39,.12) 0 12%,transparent 13%),radial-gradient(ellipse at 72% 72%,rgba(133,72,39,.13) 0 6%,transparent 7%)}
+    .hills{position:absolute;inset:auto 0 0;height:42%;background:linear-gradient(180deg,#30231b,#100e0d 78%);clip-path:polygon(0 44%,10% 31%,19% 45%,31% 25%,44% 48%,57% 31%,68% 46%,81% 20%,91% 42%,100% 30%,100% 100%,0 100%)}
+    .tree-line{position:absolute;inset:auto -2% 0;height:64%;width:104%;opacity:.94}
+    .tree-line svg{width:100%;height:100%;display:block}
+    .leaf{position:absolute;top:-8%;width:10px;height:15px;border-radius:90% 0 90% 0;background:#b96a35;opacity:.7;transform:rotate(35deg);animation:drift linear infinite;filter:drop-shadow(0 2px 4px #100b08)}
+    .leaf:nth-child(1){left:12%;animation-duration:17s;animation-delay:-9s}.leaf:nth-child(2){left:25%;animation-duration:21s;animation-delay:-4s;transform:scale(.7) rotate(65deg)}.leaf:nth-child(3){left:43%;animation-duration:19s;animation-delay:-13s;background:#d18a45}.leaf:nth-child(4){left:61%;animation-duration:23s;animation-delay:-7s;transform:scale(.8) rotate(80deg)}.leaf:nth-child(5){left:76%;animation-duration:18s;animation-delay:-11s;background:#9c4d2c}.leaf:nth-child(6){left:91%;animation-duration:22s;animation-delay:-3s;transform:scale(.65) rotate(15deg)}
+    @keyframes drift{0%{translate:0 -5vh;rotate:0deg}50%{translate:45px 55vh;rotate:180deg}100%{translate:-15px 112vh;rotate:360deg}}
+    .grain{position:absolute;inset:0;opacity:.08;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E")}
+    .topbar{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:28px 4.5vw}
+    .brand{display:flex;align-items:center;gap:11px;color:#f2e6d9;text-decoration:none;font-size:13px;letter-spacing:.19em;text-transform:uppercase;font-weight:700}
+    .brand-mark{width:29px;height:29px;display:grid;place-items:center;border:1px solid rgba(235,161,99,.45);border-radius:50%;color:#e9a05e;font-size:16px}
+    .top-note{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:rgba(242,230,217,.55)}
+    main{position:relative;z-index:2;min-height:calc(100vh - 90px);display:flex;align-items:center;justify-content:center;padding:0 22px 8vh}
+    .content{width:min(690px,100%);text-align:center;margin-top:-3vh}
+    .eyebrow{display:flex;align-items:center;justify-content:center;gap:12px;color:#d6a77f;font-size:10px;font-weight:600;letter-spacing:.29em;text-transform:uppercase;margin-bottom:0}
+    .eyebrow:before,.eyebrow:after{content:"";height:1px;width:32px;background:rgba(220,154,99,.55)}
+    h1{font-family:"Italianno",cursive;font-weight:400;font-size:clamp(104px,17vw,178px);line-height:.82;letter-spacing:.005em;color:#f7e9d9;text-shadow:0 4px 35px rgba(0,0,0,.35);margin:9px 0 24px}
+    .subtitle{font-size:14px;line-height:1.8;color:rgba(246,238,228,.72);letter-spacing:.035em;margin:0 auto 35px;max-width:420px}
+    .search-shell{display:flex;align-items:center;gap:10px;padding:8px 9px 8px 19px;border:1px solid rgba(255,232,210,.23);border-radius:16px;background:rgba(24,20,18,.66);box-shadow:0 18px 70px rgba(0,0,0,.3),inset 0 1px rgba(255,255,255,.06);backdrop-filter:blur(18px);transition:border-color .2s,transform .2s}
+    .search-shell:focus-within{border-color:rgba(231,153,91,.72);transform:translateY(-2px)}
+    .search-icon{width:19px;height:19px;flex:none;color:#d49a6a}
+    #address{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#fff1e4;font-size:14px;padding:12px 2px}
+    #address::placeholder{color:rgba(238,221,205,.45)}
+    .go{border:0;border-radius:11px;padding:13px 22px;background:linear-gradient(135deg,#e6a064,#c66c3c);color:#21140e;font-weight:700;font-size:12px;letter-spacing:.04em;cursor:pointer;box-shadow:0 5px 20px rgba(183,91,42,.22);transition:filter .2s,transform .2s}
+    .go:hover{filter:brightness(1.1);transform:translateY(-1px)}.go:active{transform:translateY(0)}
+    .hint{min-height:22px;margin:14px 0 0;font-size:11px;color:rgba(237,219,201,.58);letter-spacing:.025em}
+    .quick-links{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:27px}
+    .quick-links button{background:rgba(27,22,19,.32);border:1px solid rgba(255,230,207,.16);border-radius:999px;color:rgba(246,232,216,.78);padding:9px 15px;font-size:11px;cursor:pointer;transition:background .2s,border-color .2s}
+    .quick-links button:hover{background:rgba(190,111,62,.2);border-color:rgba(231,153,91,.5)}
+    footer{position:fixed;z-index:2;bottom:24px;left:0;right:0;text-align:center;color:rgba(238,222,205,.38);font-size:9px;letter-spacing:.2em;text-transform:uppercase}
+    .settings{position:fixed;z-index:5;right:4.5vw;top:82px;width:min(330px,calc(100vw - 36px));padding:21px;border:1px solid var(--line);border-radius:16px;background:rgba(25,21,19,.94);box-shadow:0 18px 60px #0008;backdrop-filter:blur(20px);display:none}
+    .settings.open{display:block}.settings h2{font-size:13px;letter-spacing:.08em;margin:0 0 8px}.settings p{font-size:11px;color:var(--muted);line-height:1.6;margin:0 0 15px}
+    .settings label{display:block;font-size:10px;color:#d7b99e;margin-bottom:7px}
+    .settings input{width:100%;border:1px solid var(--line);border-radius:9px;background:#171311;color:var(--cream);padding:11px;font-size:12px;outline:none}
+    .settings input:focus{border-color:#d18a55}.settings-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:13px}
+    .settings-actions button{border:1px solid var(--line);background:transparent;color:var(--cream);border-radius:8px;padding:8px 12px;font-size:10px;cursor:pointer}.settings-actions .save{background:#c87946;border-color:#c87946;color:#1d120d;font-weight:700}
+    .gear{border:1px solid var(--line);border-radius:50%;width:35px;height:35px;background:rgba(25,21,19,.3);color:#f2e3d5;cursor:pointer;font-size:15px}
+    @media(max-width:600px){.topbar{padding:20px 20px}.top-note{display:none}main{min-height:calc(100vh - 72px);padding-bottom:10vh}.content{margin-top:-7vh}.subtitle{font-size:12px;margin-bottom:27px}.search-shell{gap:7px;padding-left:13px}.go{padding:13px 16px}#address{font-size:12px}.moon{right:-2%;top:13%;width:180px;opacity:.75}.tree-line{height:48%}footer{bottom:15px;font-size:8px}}
+    @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+  </style>
+</head>
+<body>
+  <div class="scene" aria-hidden="true">
+    <div class="stars"></div><div class="moon"></div>
+    <div class="hills"></div>
+    <div class="tree-line">
+      <svg viewBox="0 0 1440 620" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="trunk" x2="0" y2="1"><stop stop-color="#30251e"/><stop offset="1" stop-color="#100d0b"/></linearGradient></defs>
+        <g fill="url(#trunk)">
+          <path d="M-35 620Q25 390 45 180Q57 100 74 15Q83 125 74 226Q105 155 153 92Q124 195 82 272Q67 440 104 620Z"/>
+          <path d="M210 620Q235 390 220 235Q197 154 174 92Q230 142 251 217Q264 130 315 57Q282 165 259 264Q267 430 291 620Z"/>
+          <path d="M1190 620Q1160 390 1190 230Q1215 145 1252 64Q1233 180 1212 275Q1235 430 1270 620Z"/>
+          <path d="M1370 620Q1340 390 1370 205Q1400 118 1445 40Q1418 180 1390 260Q1388 430 1445 620Z"/>
+        </g>
+        <g fill="#17120f">
+          <path d="M0 210Q40 110 110 115Q150 15 230 78Q300 2 360 105Q420 45 470 145Q420 215 350 190Q270 250 195 192Q105 265 0 210Z"/>
+          <path d="M990 190Q1040 70 1110 100Q1160 0 1230 70Q1310 5 1370 110Q1440 60 1480 165Q1410 230 1330 190Q1250 255 1170 192Q1080 255 990 190Z"/>
+          <path d="M80 350Q140 260 220 300Q290 220 360 300Q430 250 490 340Q420 410 330 380Q240 435 160 380Q110 410 80 350Z"/>
+          <path d="M1030 350Q1100 250 1170 300Q1250 215 1320 300Q1400 240 1470 340Q1390 420 1300 380Q1200 440 1120 380Q1060 410 1030 350Z"/>
+        </g>
+        <path d="M0 570Q190 505 360 555T720 540T1080 550T1440 520V620H0Z" fill="#100d0b"/>
+      </svg>
+    </div>
+    <div class="leaf"></div><div class="leaf"></div><div class="leaf"></div><div class="leaf"></div><div class="leaf"></div><div class="leaf"></div>
+    <div class="grain"></div>
+  </div>
+
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Autumn home"><span class="brand-mark">✦</span><span>autumn</span></a>
+    <div style="display:flex;align-items:center;gap:15px"><span class="top-note">a quieter corner of the web</span><button class="gear" id="settingsToggle" aria-label="Settings" title="Settings">⚙</button></div>
+  </header>
+
+  <main>
+    <section class="content">
+      <div class="eyebrow">take the scenic route</div>
+      <h1>Autumn</h1>
+      <p class="subtitle">A little escape into the open web.<br>Settle in, take your time, and wander.</p>
+      <form id="searchForm" class="search-shell" autocomplete="off">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+        <input id="address" type="text" placeholder="search the web or enter a url..." aria-label="Search the web or enter a URL" spellcheck="false">
+        <button class="go" type="submit">explore ↗</button>
+      </form>
+      <p class="hint" id="status" role="status">the gateway is waiting for its wisp connection.</p>
+      <div class="quick-links" aria-label="Quick links">
+        <button type="button" data-url="https://www.wikipedia.org">wikipedia</button>
+        <button type="button" data-url="https://www.youtube.com">youtube</button>
+        <button type="button" data-url="https://www.reddit.com">reddit</button>
+      </div>
+    </section>
+  </main>
+
+  <section class="settings" id="settingsPanel" aria-label="Connection settings">
+    <h2>connection settings</h2>
+    <p>Your Rust Wisp server address will go here once the backend is deployed. The frontend is currently in design mode.</p>
+    <label for="wispUrl">wisp websocket url</label>
+    <input id="wispUrl" type="url" placeholder="wss://your-server.example/wisp/">
+    <div class="settings-actions"><button type="button" id="closeSettings">close</button><button type="button" class="save" id="saveSettings">save address</button></div>
+  </section>
+  <footer>made for slow evenings · est. under the autumn moon</footer>
+
+  <script>
+    const form = document.getElementById("searchForm");
+    const address = document.getElementById("address");
+    const status = document.getElementById("status");
+    const panel = document.getElementById("settingsPanel");
+    const wispInput = document.getElementById("wispUrl");
+    const savedWisp = localStorage.getItem("autumn-wisp-url") || "";
+    wispInput.value = savedWisp;
+    document.getElementById("settingsToggle").addEventListener("click", () => panel.classList.toggle("open"));
+    document.getElementById("closeSettings").addEventListener("click", () => panel.classList.remove("open"));
+    document.getElementById("saveSettings").addEventListener("click", () => {
+      const value = wispInput.value.trim();
+      if (value && !value.startsWith("wss://")) {
+        status.textContent = "please use a secure wss:// websocket address.";
+        return;
+      }
+      localStorage.setItem("autumn-wisp-url", value);
+      status.textContent = value ? "wisp address saved locally. proxy engine setup is the next step." : "wisp address cleared.";
+      panel.classList.remove("open");
+    });
+    function normalizeInput(value) {
+      const text = value.trim();
+      if (!text) return "";
+      if (/^https?:\/\//i.test(text)) return text;
+      if (/^[\w-]+\.[a-z]{2,}([/:?#]|$)/i.test(text)) return "https://" + text;
+      return "https://www.google.com/search?q=" + encodeURIComponent(text);
+    }
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      const target = normalizeInput(address.value);
+      if (!target) { status.textContent = "enter a search or website address to begin."; return; }
+      if (!localStorage.getItem("autumn-wisp-url")) {
+        status.textContent = "frontend ready — add your Wisp server in settings, then we can connect the proxy engine.";
+        return;
+      }
+      status.textContent = "Wisp address saved. The browser proxy engine still needs to be wired to this page.";
+    });
+    document.querySelectorAll("[data-url]").forEach(button => button.addEventListener("click", () => {
+      address.value = button.dataset.url;
+      address.focus();
+    }));
+  </script>
+</body>
+</html>
