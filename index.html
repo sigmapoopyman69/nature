@@ -22,7 +22,7 @@
     .moon{position:absolute;width:clamp(150px,22vw,290px);aspect-ratio:1;right:11%;top:8%;border-radius:50%;background:radial-gradient(circle at 34% 30%,#ffd89a 0%,#f7b45f 42%,#d87935 76%,#9c4928 100%);box-shadow:0 0 38px rgba(237,137,64,.26),0 0 115px rgba(221,112,48,.2),0 0 210px rgba(221,112,48,.1);opacity:.94}
     .moon:before{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(ellipse at 63% 37%,rgba(133,72,39,.16) 0 8%,transparent 9%),radial-gradient(ellipse at 35% 64%,rgba(133,72,39,.12) 0 12%,transparent 13%),radial-gradient(ellipse at 72% 72%,rgba(133,72,39,.13) 0 6%,transparent 7%)}
     .hills{position:absolute;inset:auto 0 0;height:42%;background:linear-gradient(180deg,#30231b,#100e0d 78%);clip-path:polygon(0 44%,10% 31%,19% 45%,31% 25%,44% 48%,57% 31%,68% 46%,81% 20%,91% 42%,100% 30%,100% 100%,0 100%)}
-    .tree-line{position:absolute;inset:auto -2% 0;height:64%;width:104%;opacity:.94}
+    .tree-line{position:absolute;inset:auto -2% 0;height:68%;width:104%;opacity:.9;filter:drop-shadow(0 -12px 28px rgba(18,12,9,.18));-webkit-mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.18) 7%,#000 22%);mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.18) 7%,#000 22%)}
     .tree-line svg{width:100%;height:100%;display:block}
     .leaf{position:absolute;top:-8%;width:10px;height:15px;border-radius:90% 0 90% 0;background:#b96a35;opacity:.7;transform:rotate(35deg);animation:drift linear infinite;filter:drop-shadow(0 2px 4px #100b08)}
     .leaf:nth-child(1){left:12%;animation-duration:17s;animation-delay:-9s}.leaf:nth-child(2){left:25%;animation-duration:21s;animation-delay:-4s;transform:scale(.7) rotate(65deg)}.leaf:nth-child(3){left:43%;animation-duration:19s;animation-delay:-13s;background:#d18a45}.leaf:nth-child(4){left:61%;animation-duration:23s;animation-delay:-7s;transform:scale(.8) rotate(80deg)}.leaf:nth-child(5){left:76%;animation-duration:18s;animation-delay:-11s;background:#9c4d2c}.leaf:nth-child(6){left:91%;animation-duration:22s;animation-delay:-3s;transform:scale(.65) rotate(15deg)}
@@ -101,7 +101,7 @@
 
   <section class="settings" id="settingsPanel" aria-label="Connection settings">
     <h2>connection settings</h2>
-    <p>Your Rust Wisp server address will go here once the backend is deployed. The frontend is currently in design mode.</p>
+    <p>add your secure wisp websocket address here once the backend is running.</p>
     <label for="wispUrl">wisp websocket url</label>
     <input id="wispUrl" type="url" placeholder="wss://your-server.example/wisp/">
     <div class="settings-actions"><button type="button" id="closeSettings">close</button><button type="button" class="save" id="saveSettings">save address</button></div>
