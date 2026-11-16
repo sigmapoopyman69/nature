@@ -67,7 +67,8 @@
     #browserAddress{flex:1;min-width:0;border:1px solid rgba(255,232,210,.18);border-radius:9px;background:#171311;color:#fff1e4;padding:10px 12px;outline:none}
     #browserAddress:focus{border-color:#d18a55}
     #browserStatus{padding:5px 12px;margin:0;background:#171311;color:#c1afa0;font-size:11px;min-height:24px}
-    .browser-shell{overflow:hidden;contain:layout paint}.browser-toolbar{flex:none;min-width:0}.browser-toolbar form{min-width:0;max-width:100%}#browserStatus{flex:none}#browserFrame{display:block;flex:1 1 0;width:100%;max-width:100%;height:0;min-width:0;min-height:0;border:0;background:white;overflow:hidden}
+    .browser-shell{overflow:hidden;contain:layout paint}.browser-toolbar{flex:none;min-width:0}.browser-toolbar form{min-width:0;max-width:100%}#browserStatus{flex:none}
+    .tabs-strip{display:flex;align-items:center;gap:7px;padding:7px 10px 0;background:#171311;overflow:hidden}.tabs-bar{display:flex;align-items:center;gap:6px;min-width:0;overflow-x:auto;flex:1}.tab-button{flex:none;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid rgba(255,232,210,.14);border-bottom:0;border-radius:9px 9px 0 0;background:#211a16;color:#cdbba9;padding:8px 12px;font-size:11px;cursor:pointer}.tab-button.active{background:#34241b;color:#fff1e4;border-color:#d18a55}.add-tab{flex:none;border:1px solid rgba(255,232,210,.16);border-radius:8px;background:#211a16;color:#f2e6d9;padding:6px 11px;cursor:pointer}.browser-views{display:flex;flex:1 1 0;min-height:0;min-width:0;overflow:hidden}.browser-tab-frame{display:block;flex:1 1 0;width:100%;height:100%;min-width:0;min-height:0;border:0;background:white}.browser-tab-frame[hidden]{display:none}.relay-note{margin-top:9px!important;font-size:10px!important;opacity:.8}
 
     @media(max-width:600px){.topbar{padding:20px 20px}main{min-height:calc(100vh - 72px);padding-bottom:10vh}.content{margin-top:-7vh}.search-shell{gap:7px;padding-left:13px}.go{padding:13px 16px}#address{font-size:12px}.moon{right:-2%;top:13%;width:180px;opacity:.75}.tree-line{height:48%}}
     @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
@@ -118,14 +119,16 @@
 
   <section class="settings" id="settingsPanel" aria-label="Connection settings">
     <h2>connection settings</h2>
-    <p>add your secure wisp websocket address here once the backend is running.</p>
-    <label for="wispUrl">wisp websocket url</label>
-    <input id="wispUrl" type="url" placeholder="wss://autumn.wisp.uno/wisp/">
-    <div class="settings-actions"><button type="button" id="closeSettings">close</button><button type="button" class="save" id="saveSettings">save address</button></div>
+    <p>Autumn uses its built-in secure relay by default. You can optionally enter another compatible Wisp relay.</p>
+    <label for="wispUrl">custom relay address (optional)</label>
+    <input id="wispUrl" type="url" placeholder="wss://your-relay.example/wisp/">
+    <p class="relay-note">Leave blank to use Autumn's default relay. Custom relays may require their own access setup.</p>
+    <div class="settings-actions"><button type="button" id="closeSettings">close</button><button type="button" class="save" id="saveSettings">save relay</button></div>
   </section>
 
 
   <section class="browser-shell" id="browserShell" hidden aria-label="autumn browser">
+    <div class="tabs-strip"><div id="tabsBar" class="tabs-bar"></div><button type="button" id="addTab" class="add-tab" aria-label="new tab">+</button></div>
     <div class="browser-toolbar">
       <button type="button" id="browserBack" aria-label="back">←</button>
       <button type="button" id="browserForward" aria-label="forward">→</button>
@@ -138,7 +141,7 @@
       <button type="button" id="browserClose" aria-label="close browser">×</button>
     </div>
     <p id="browserStatus" role="status">starting autumn browser...</p>
-    <iframe id="browserFrame" title="autumn web view" referrerpolicy="no-referrer"></iframe>
+    <div id="browserViews" class="browser-views"><iframe id="browserFrame" title="autumn web view" referrerpolicy="no-referrer" class="browser-tab-frame"></iframe></div>
   </section>
   <script>
     (() => {
