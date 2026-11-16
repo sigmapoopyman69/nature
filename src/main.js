@@ -15,24 +15,38 @@ const browserForm = document.getElementById("browserForm");
 const browserAddress = document.getElementById("browserAddress");
 const browserStatus = document.getElementById("browserStatus");
 const browserFrame = document.getElementById("browserFrame");
+const tabsBar = document.getElementById("tabsBar");
+const addTabButton = document.getElementById("addTab");
 
 let controller = null;
-let frame = null;
+let activeTabId = null;
+let tabs = [];
+let nextTabId = 1;
 let bootPromise = null;
 let keepalive = null;
+
+const DEFAULT_RELAY = WISP_URL;
+const savedRelay = (() => { try { return localStorage.getItem("autumn-custom-relay") || ""; } catch { return ""; } })();
+wispInput.value = savedRelay;
 
 provider.value = localStorage.getItem("autumn-search-provider") || "brave";
 provider.addEventListener("change", () => {
   localStorage.setItem("autumn-search-provider", provider.value);
 });
 
-wispInput.value = WISP_URL;
 document.getElementById("settingsToggle").addEventListener("click", () => panel.classList.toggle("open"));
 document.getElementById("closeSettings").addEventListener("click", () => panel.classList.remove("open"));
 document.getElementById("saveSettings").addEventListener("click", () => {
-  wispInput.value = WISP_URL;
-  localStorage.setItem("autumn-wisp-url", WISP_URL);
-  status.textContent = "secure connection address confirmed.";
+  const relay = wispInput.value.trim();
+  if (relay && !/^wss:\/\//i.test(relay)) {
+    status.textContent = "relay address must start with wss://";
+    return;
+  }
+  try {
+    if (relay) localStorage.setItem("autumn-custom-relay", relay);
+    else localStorage.removeItem("autumn-custom-relay");
+  } catch {}
+  status.textContent = relay ? "custom relay saved. reload a tab to use it." : "default secure relay selected.";
   panel.classList.remove("open");
 });
 
@@ -157,9 +171,13 @@ async function initializeRuntime() {
     }
 
     browserStatus.textContent = "requesting a temporary secure ticket...";
-    const ticket = await getTemporaryTicket();
-    const wisp = new URL(WISP_URL);
-    wisp.searchParams.set("ticket", ticket);
+    const customRelay = (() => { try { return localStorage.getItem("autumn-custom-relay") || ""; } catch { return ""; } })();
+    const relayUrl = customRelay || DEFAULT_RELAY;
+    const wisp = new URL(relayUrl);
+    if (!customRelay) {
+      const ticket = await getTemporaryTicket();
+      wisp.searchParams.set("ticket", ticket);
+    }
 
     // libcurl-transport validates the configured Wisp URL with endsWith("/").
     // Keep the ticket query parameter unchanged, while adding a harmless empty
@@ -186,14 +204,9 @@ async function initializeRuntime() {
 
     // Cache fetched subresources (including image assets) and keep Autumn's
     // address bar synchronized with in-page navigation.
-    frame = controller.createFrame(browserFrame, {
-      plugins: [
-        new HistoryCompatibilityPlugin(),
-        new ScramjetUtils.UrlWatcherPlugin(url => {
-          browserAddress.value = url;
-        }),
-        new ScramjetUtils.HttpCachePlugin()
-      ]
+    // Each tab owns its own Scramjet frame and browsing history.
+    tabs.forEach(tab => {
+      if (!tab.frame) tab.frame = createScramjetFrame(tab.element, ControllerAPI, ScramjetUtils);
     });
 
     // The service worker's in-memory frame table can be lost when the browser
@@ -221,29 +234,118 @@ async function initializeRuntime() {
   }
 }
 
+function createScramjetFrame(element, ControllerAPI, ScramjetUtils) {
+  const tab = tabs.find(item => item.element === element);
+  return controller.createFrame(element, {
+    plugins: [
+      new (class extends ControllerAPI.ManagedPlugin {
+        constructor() { super("autumn-history-compat", []); }
+        install(scramjetFrame) {
+          super.install(scramjetFrame);
+          this.tap(scramjetFrame.hooks.init.pre, context => {
+            if (!context.isTopLevel) return;
+            const proto = context.window.History.prototype;
+            for (const method of ["pushState", "replaceState"]) {
+              const original = proto[method];
+              proto[method] = function(state, unused, url) {
+                return original.call(this, state, unused, url ?? context.client.url.href);
+              };
+            }
+          });
+        }
+      })(),
+      new ScramjetUtils.UrlWatcherPlugin(url => {
+        if (tab && tab.id === activeTabId) browserAddress.value = url;
+      }),
+      new ScramjetUtils.HttpCachePlugin()
+    ]
+  });
+}
+
+function renderTabs() {
+  tabsBar.replaceChildren();
+  tabs.forEach(tab => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "tab-button" + (tab.id === activeTabId ? " active" : "");
+    button.textContent = tab.title || "new tab";
+    button.title = tab.url || "new tab";
+    button.addEventListener("click", () => activateTab(tab.id));
+    const close = document.createElement("span");
+    close.textContent = " ×";
+    close.addEventListener("click", event => { event.stopPropagation(); closeTab(tab.id); });
+    button.append(close);
+    tabsBar.append(button);
+  });
+}
+
+function activateTab(id) {
+  const selected = tabs.find(tab => tab.id === id);
+  if (!selected) return;
+  activeTabId = id;
+  tabs.forEach(tab => { tab.element.hidden = tab.id !== id; });
+  browserAddress.value = selected.url || "";
+  browserStatus.textContent = selected.status || "ready.";
+  renderTabs();
+}
+
+function createTab(initialUrl = "") {
+  const id = nextTabId++;
+  const element = document.createElement("iframe");
+  element.title = "autumn tab " + id;
+  element.referrerPolicy = "no-referrer";
+  element.className = "browser-tab-frame";
+  element.hidden = true;
+  document.getElementById("browserViews").append(element);
+  const tab = { id, element, frame: null, url: "", title: "new tab", status: "new tab" };
+  tabs.push(tab);
+  activateTab(id);
+  if (initialUrl) navigate(initialUrl);
+  return tab;
+}
+
+function closeTab(id) {
+  const index = tabs.findIndex(tab => tab.id === id);
+  if (index < 0) return;
+  tabs[index].element.remove();
+  tabs.splice(index, 1);
+  if (!tabs.length) {
+    browserShell.hidden = true;
+    activeTabId = null;
+    return;
+  }
+  activateTab(tabs[Math.max(0, index - 1)].id);
+}
+
 async function navigate(value) {
   try {
     const target = normalizeTarget(value);
     browserShell.hidden = false;
+    if (!tabs.length) createTab();
+    let tab = tabs.find(item => item.id === activeTabId);
+    if (!tab) tab = createTab();
+    tab.url = target;
+    tab.title = new URL(target).hostname;
+    tab.status = "starting...";
     browserAddress.value = target;
+    renderTabs();
     browserStatus.textContent = "starting autumn browser...";
     await initializeRuntime();
+    if (!tab.frame) {
+      const ControllerAPI = window.$scramjetController;
+      const ScramjetUtils = window.$scramjetUtils;
+      tab.frame = createScramjetFrame(tab.element, ControllerAPI, ScramjetUtils);
+    }
     browserStatus.textContent = "routing " + new URL(target).hostname + " through Scramjet...";
-    if (!frame || frame.element !== browserFrame) {
-      throw new Error("Scramjet did not attach its browsing frame to Autumn's browser workspace.");
-    }
-
-    // Frame.go() must rewrite the destination to this frame's private Scramjet route.
-    // Never fall back to assigning the destination URL directly to the top-level page.
-    frame.go(new URL(target).href);
-
-    const routedUrl = new URL(frame.element.src, location.href);
-    const framePrefix = new URL(frame.prefix, location.href).pathname;
+    tab.frame.go(new URL(target).href);
+    const routedUrl = new URL(tab.element.src, location.href);
+    const framePrefix = new URL(tab.frame.prefix, location.href).pathname;
     if (routedUrl.origin !== location.origin || !routedUrl.pathname.startsWith(framePrefix)) {
-      throw new Error("Scramjet did not create an Autumn-routed URL. The page was not opened directly.");
+      throw new Error("Scramjet did not create an Autumn-routed URL.");
     }
-
-    browserStatus.textContent = "opening " + new URL(target).hostname + " inside autumn...";
+    tab.status = "opening " + new URL(target).hostname + "...";
+    browserStatus.textContent = tab.status;
+    renderTabs();
   } catch (error) {
     browserShell.hidden = false;
     browserStatus.textContent = "could not open page: " + error.message;
@@ -260,13 +362,15 @@ browserForm.addEventListener("submit", event => {
   navigate(browserAddress.value);
 });
 
-document.getElementById("browserBack").addEventListener("click", () => frame?.back?.());
-document.getElementById("browserForward").addEventListener("click", () => frame?.forward?.());
-document.getElementById("browserReload").addEventListener("click", () => frame?.reload?.());
+document.getElementById("browserBack").addEventListener("click", () => tabs.find(t => t.id === activeTabId)?.frame?.back?.());
+document.getElementById("browserForward").addEventListener("click", () => tabs.find(t => t.id === activeTabId)?.frame?.forward?.());
+document.getElementById("browserReload").addEventListener("click", () => tabs.find(t => t.id === activeTabId)?.frame?.reload?.());
 document.getElementById("browserHome").addEventListener("click", () => navigate("https://search.brave.com"));
-document.getElementById("browserClose").addEventListener("click", () => { browserShell.hidden = true; });
+document.getElementById("browserClose").addEventListener("click", () => closeTab(activeTabId));
+addTabButton.addEventListener("click", () => createTab());
 document.querySelectorAll("[data-url]").forEach(button => button.addEventListener("click", () => navigate(button.dataset.url)));
 
+createTab();
 const goto = new URL(location.href).searchParams.get("goto");
 if (goto) {
   history.replaceState(null, "", BASE);
