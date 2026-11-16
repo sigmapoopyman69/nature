@@ -160,8 +160,22 @@ async function navigate(value) {
     browserAddress.value = target;
     browserStatus.textContent = "starting autumn browser...";
     await initializeRuntime();
-    browserStatus.textContent = "loading " + new URL(target).hostname + "...";
-    frame.go(target);
+    browserStatus.textContent = "routing " + new URL(target).hostname + " through Scramjet...";
+    if (!frame || frame.element !== browserFrame) {
+      throw new Error("Scramjet did not attach its browsing frame to Autumn's browser workspace.");
+    }
+
+    // Frame.go() must rewrite the destination to this frame's private Scramjet route.
+    // Never fall back to assigning the destination URL directly to the top-level page.
+    frame.go(new URL(target).href);
+
+    const routedUrl = new URL(frame.element.src, location.href);
+    const framePrefix = new URL(frame.prefix, location.href).pathname;
+    if (routedUrl.origin !== location.origin || !routedUrl.pathname.startsWith(framePrefix)) {
+      throw new Error("Scramjet did not create an Autumn-routed URL. The page was not opened directly.");
+    }
+
+    browserStatus.textContent = "opening " + new URL(target).hostname + " inside autumn...";
   } catch (error) {
     browserShell.hidden = false;
     browserStatus.textContent = "could not open page: " + error.message;
