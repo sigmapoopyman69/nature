@@ -140,6 +140,28 @@
     <p id="browserStatus" role="status">starting autumn browser...</p>
     <iframe id="browserFrame" title="autumn web view"></iframe>
   </section>
-  <script type="module" src="./src/main.js"></script>
+  <script>
+    (() => {
+      const provider = document.getElementById("provider");
+      const form = document.getElementById("searchForm");
+      const status = document.getElementById("status");
+      try {
+        const saved = localStorage.getItem("autumn-search-provider");
+        if (saved && [...provider.options].some(option => option.value === saved)) {
+          provider.value = saved;
+        }
+        provider.addEventListener("change", () => {
+          try { localStorage.setItem("autumn-search-provider", provider.value); } catch {}
+        });
+      } catch {}
+      form.addEventListener("submit", event => {
+        event.preventDefault();
+        if (!window.__autumnModuleLoaded) {
+          status.textContent = "autumn's browser script did not load. please refresh; if this continues, tell us.";
+        }
+      }, true);
+    })();
+  </script>
+  <script type="module" src="./src/main.js" onerror="document.getElementById('status').textContent='autumn browser script failed to load. please refresh.'"></script>
 </body>
 </html>
