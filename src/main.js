@@ -130,8 +130,10 @@ async function initializeRuntime() {
       scope: BASE,
       updateViaCache: "none"
     });
+    // Listen before waiting for ready so a fast controllerchange cannot be missed.
+    const controlPromise = waitForServiceWorkerControl(registration);
     await navigator.serviceWorker.ready;
-    const serviceworker = await waitForServiceWorkerControl(registration);
+    const serviceworker = await controlPromise;
     if (!serviceworker) throw new Error("Scramjet service worker is unavailable.");
 
     browserStatus.textContent = "loading Scramjet runtime...";
@@ -289,6 +291,26 @@ function activateTab(id) {
   renderTabs();
 }
 
+function renderStartPage(id) {
+  const page = [
+    '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Autumn</title><style>',
+    '*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Arial,sans-serif;color:#f6eee4}',
+    'body{min-height:100vh;display:grid;place-items:center;overflow:hidden;background:radial-gradient(ellipse at 76% 20%,rgba(184,91,43,.28),transparent 32%),linear-gradient(180deg,#17151a,#242027 48%,#120f0d)}',
+    '.moon{position:fixed;width:clamp(130px,20vw,240px);aspect-ratio:1;right:12%;top:10%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffd89a,#e99b4f 58%,#a84e2b);box-shadow:0 0 100px #d8793533;opacity:.8}',
+    'main{position:relative;width:min(680px,calc(100% - 36px));text-align:center}h1{font-family:Georgia,serif;font-weight:400;font-style:italic;font-size:clamp(64px,13vw,118px);margin:0 0 28px;text-shadow:0 5px 30px #0008}',
+    'form{display:flex;gap:9px;padding:9px 10px 9px 17px;border:1px solid #ffe8d233;border-radius:15px;background:#181411bb;box-shadow:0 18px 60px #0005}input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#fff1e4;font-size:14px;padding:10px 2px}input::placeholder{color:#eeddcd77}',
+    'button{border:0;border-radius:10px;padding:12px 20px;background:linear-gradient(135deg,#e6a064,#c66c3c);color:#21140e;font-weight:700;cursor:pointer}.hint{font-size:11px;color:#eddbc199;margin-top:17px;letter-spacing:.04em}.links{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:26px}.links button{background:#211a16aa;border:1px solid #ffe6cf29;color:#f6e8d6;font-size:11px;padding:9px 15px}',
+    '</style></head><body><div class="moon"></div><main><h1>Autumn</h1><form id="startForm"><input id="startQuery" autocomplete="off" placeholder="search the web or enter a url..." aria-label="search the web or enter a url"><button type="submit">explore ↗</button></form><p class="hint">a quieter way to explore.</p><div class="links"><button data-url="https://search.brave.com">brave</button><button data-url="https://www.youtube.com">youtube</button><button data-url="https://www.wikipedia.org">wikipedia</button></div></main>',
+    '<script>const open=value=>parent.__autumnOpenTabSearch(${id},value);document.getElementById("startForm").addEventListener("submit",e=>{e.preventDefault();open(document.getElementById("startQuery").value)});document.querySelectorAll("[data-url]").forEach(b=>b.addEventListener("click",()=>open(b.dataset.url)));<\\/script></body></html>'
+  ].join("");
+  return page;
+}
+
+window.__autumnOpenTabSearch = (id, value) => {
+  if (activeTabId !== id) activateTab(id);
+  navigate(value);
+};
+
 function createTab(initialUrl = "") {
   const id = nextTabId++;
   const element = document.createElement("iframe");
@@ -297,9 +319,10 @@ function createTab(initialUrl = "") {
   element.className = "browser-tab-frame";
   element.hidden = true;
   document.getElementById("browserViews").append(element);
-  const tab = { id, element, frame: null, url: "", title: "new tab", status: "new tab" };
+  const tab = { id, element, frame: null, url: "", title: "autumn", status: "autumn start page" };
   tabs.push(tab);
   activateTab(id);
+  element.srcdoc = renderStartPage(id);
   if (initialUrl) navigate(initialUrl);
   return tab;
 }
