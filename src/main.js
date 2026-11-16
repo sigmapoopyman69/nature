@@ -1,3 +1,5 @@
+window.__autumnModuleLoaded = true;
+
 const BASE = "/nature/";
 const WISP_URL = "wss://autumn.wisp.uno/wisp/";
 const TICKET_URL = "https://autumn.wisp.uno/ticket";
