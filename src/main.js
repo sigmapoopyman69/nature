@@ -112,8 +112,35 @@ async function initializeRuntime() {
     await loadScript(BASE + "controller/controller.api.js");
     await loadScript(BASE + "utils/scramjet-utils.js");
 
-    if (!window.$scramjetController?.Controller) {
-      throw new Error("Scramjet controller API did not load.");
+    if (!window.$scramjetController?.Controller || !window.$scramjetUtils) {
+      throw new Error("Scramjet controller or utilities API did not load.");
+    }
+
+    const ControllerAPI = window.$scramjetController;
+    const ScramjetUtils = window.$scramjetUtils;
+
+    // Scramjet 2.0.67-alpha.2 rewrites omitted History URLs as "undefined".
+    // Preserve the current proxied URL when a site calls pushState/replaceState
+    // with only the state and title arguments.
+    class HistoryCompatibilityPlugin extends ControllerAPI.ManagedPlugin {
+      constructor() {
+        super("autumn-history-compat", []);
+      }
+
+      install(scramjetFrame) {
+        super.install(scramjetFrame);
+        this.tap(scramjetFrame.hooks.init.pre, context => {
+          if (!context.isTopLevel) return;
+
+          const historyPrototype = context.window.History.prototype;
+          for (const method of ["pushState", "replaceState"]) {
+            const original = historyPrototype[method];
+            historyPrototype[method] = function (state, unused, url) {
+              return original.call(this, state, unused, url ?? context.client.url.href);
+            };
+          }
+        });
+      }
     }
 
     browserStatus.textContent = "requesting a temporary secure ticket...";
@@ -143,10 +170,32 @@ async function initializeRuntime() {
     });
 
     await controller.wait();
-    frame = controller.createFrame(browserFrame);
-    keepalive = window.setInterval(() => {
-      navigator.serviceWorker.controller?.postMessage("keepalive");
-    }, 15000);
+
+    // Cache fetched subresources (including image assets) and keep Autumn's
+    // address bar synchronized with in-page navigation.
+    frame = controller.createFrame(browserFrame, {
+      plugins: [
+        new HistoryCompatibilityPlugin(),
+        new ScramjetUtils.UrlWatcherPlugin(url => {
+          browserAddress.value = url;
+        }),
+        new ScramjetUtils.HttpCachePlugin()
+      ]
+    });
+
+    // The service worker's in-memory frame table can be lost when the browser
+    // suspends it. Ping the actual active worker every 15 seconds; use the
+    // controller reference as a fallback if navigator.controller is absent.
+    const pingServiceWorker = () => {
+      const worker = navigator.serviceWorker.controller || serviceworker;
+      try { worker?.postMessage("keepalive"); } catch (error) {
+        console.warn("[Autumn] service worker keepalive failed:", error);
+      }
+    };
+    pingServiceWorker();
+    keepalive = window.setInterval(pingServiceWorker, 15000);
+    navigator.serviceWorker.addEventListener("controllerchange", pingServiceWorker);
+
     browserStatus.textContent = "autumn browser is ready.";
   })();
 
