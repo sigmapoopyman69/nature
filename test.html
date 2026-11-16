@@ -1,11 +1,12 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#17251d">
 <title>autumn connection test</title>
 <style>
+* { box-sizing: border-box; }
 body {
   background: #17251d;
   color: #f5ead7;
@@ -14,13 +15,15 @@ body {
   place-items: center;
   min-height: 100vh;
   margin: 0;
+  padding: 20px;
 }
 main {
   background: #26382b;
   padding: 28px;
   border-radius: 16px;
-  width: min(85%, 420px);
+  width: min(100%, 460px);
   text-align: center;
+  box-shadow: 0 18px 55px #0005;
 }
 button {
   background: #d87937;
@@ -29,20 +32,24 @@ button {
   border-radius: 9px;
   padding: 13px 20px;
   cursor: pointer;
+  font-weight: 700;
 }
+button:disabled { opacity: .6; cursor: wait; }
 #result {
   margin-top: 20px;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+  line-height: 1.55;
+  font-size: 14px;
 }
 </style>
 </head>
 <body>
 <main>
 <h1>🍂 autumn connection test</h1>
-<p>testing the ticket endpoint</p>
-<button id="test">test connection</button>
-<div id="result">ready</div>
+<p>testing the secure ticket and wisp websocket</p>
+<button id="test" type="button">test connection</button>
+<div id="result" role="status" aria-live="polite">ready</div>
 </main>
 
 <script>
@@ -51,45 +58,103 @@ const result = document.getElementById("result");
 
 button.addEventListener("click", async () => {
   button.disabled = true;
-  result.textContent = "connecting...";
+  result.textContent = "requesting a temporary ticket...";
+
+  let socket = null;
+  let socketTimer = null;
+  let completed = false;
+
+  const finish = (message) => {
+    if (completed) return;
+    completed = true;
+    if (socketTimer) clearTimeout(socketTimer);
+    result.textContent = message;
+    button.disabled = false;
+  };
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
+  const ticketTimer = setTimeout(() => controller.abort(), 12000);
 
   try {
-    const response = await fetch(
-      "https://autumn.wisp.uno/ticket",
-      {
-        method: "POST",
-        signal: controller.signal,
-        cache: "no-store"
-      }
-    );
+    const response = await fetch("https://autumn.wisp.uno/ticket", {
+      method: "POST",
+      signal: controller.signal,
+      cache: "no-store"
+    });
 
     const body = await response.text();
-
-    result.textContent =
-      "HTTP STATUS: " + response.status +
-      "\nRESPONSE: " + (body || "(empty response)");
-
-    if (response.ok) {
-      try {
-        const data = JSON.parse(body);
-        result.textContent =
-          "SUCCESS! Ticket issued.\nExpires in: " +
-          data.expires_in + " seconds.\nTicket hidden.";
-      } catch {
-        result.textContent += "\nResponse was not valid JSON.";
-      }
+    if (!response.ok) {
+      finish("TICKET REQUEST FAILED\nHTTP status: " + response.status +
+        "\nResponse: " + (body || "(empty response)"));
+      return;
     }
+
+    let data;
+    try {
+      data = JSON.parse(body);
+    } catch {
+      finish("TICKET RESPONSE WAS NOT VALID JSON\n" + (body || "(empty response)"));
+      return;
+    }
+
+    if (!data.ticket) {
+      finish("The server responded, but did not provide a ticket.");
+      return;
+    }
+
+    result.textContent = "Ticket issued.\nOpening secure WebSocket...";
+    const wsUrl = "wss://autumn.wisp.uno/wisp/?ticket=" +
+      encodeURIComponent(data.ticket);
+
+    // Wisp v2 requires the Sec-WebSocket-Protocol header to be present.
+    socket = new WebSocket(wsUrl, "wisp");
+    socket.binaryType = "arraybuffer";
+
+    socketTimer = setTimeout(() => {
+      finish("TICKET: SUCCESS\nWEBSOCKET: upgrade opened, but no Wisp packet arrived within 8 seconds.\nCheck the Wispbyte console for the upgrade result.");
+      try { socket.close(); } catch {}
+    }, 8000);
+
+    socket.onopen = () => {
+      if (!completed) {
+        result.textContent = "Ticket accepted.\nSecure WebSocket connected.\nWaiting for the Wisp server handshake...";
+      }
+    };
+
+    socket.onmessage = (event) => {
+      let firstByte = null;
+      if (event.data instanceof ArrayBuffer) {
+        const bytes = new Uint8Array(event.data);
+        if (bytes.length) firstByte = bytes[0];
+      }
+
+      const packetNames = { 3: "CONTINUE", 5: "INFO" };
+      const packetLabel = firstByte === null
+        ? "unrecognized message format"
+        : (packetNames[firstByte] || "packet type " + firstByte);
+
+      finish("SUCCESS!\nTemporary ticket: accepted.\nSecure WebSocket: connected.\nWisp server response: " + packetLabel + ".\nThe secure transport is responding.");
+      try { socket.close(1000, "connection test complete"); } catch {}
+    };
+
+    socket.onerror = () => {
+      finish("TICKET: SUCCESS\nWEBSOCKET: connection error.\nCheck the Wispbyte console for [AUTUMN WS] messages.");
+      try { socket.close(); } catch {}
+    };
+
+    socket.onclose = (event) => {
+      if (!completed) {
+        finish("TICKET: SUCCESS\nWEBSOCKET CLOSED before a Wisp packet arrived.\nClose code: " + event.code +
+          (event.reason ? "\nReason: " + event.reason : "") +
+          "\nCheck the Wispbyte console for [AUTUMN WS] messages.");
+      }
+    };
   } catch (error) {
-    result.textContent =
-      error.name === "AbortError"
-        ? "TIMEOUT: backend did not respond within 12 seconds."
-        : "FETCH ERROR: " + error.message;
+    finish(error.name === "AbortError"
+      ? "TIMEOUT: ticket endpoint did not respond within 12 seconds."
+      : "FETCH ERROR: " + error.message);
   } finally {
-    clearTimeout(timeout);
-    button.disabled = false;
+    clearTimeout(ticketTimer);
   }
 });
 </script>
