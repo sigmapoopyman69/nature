@@ -67,7 +67,7 @@
     #browserAddress{flex:1;min-width:0;border:1px solid rgba(255,232,210,.18);border-radius:9px;background:#171311;color:#fff1e4;padding:10px 12px;outline:none}
     #browserAddress:focus{border-color:#d18a55}
     #browserStatus{padding:5px 12px;margin:0;background:#171311;color:#c1afa0;font-size:11px;min-height:24px}
-    #browserFrame{flex:1;width:100%;height:100%;min-height:0;border:0;background:white}
+    .browser-shell{overflow:hidden;contain:layout paint}.browser-toolbar{flex:none;min-width:0}.browser-toolbar form{min-width:0;max-width:100%}#browserStatus{flex:none}#browserFrame{display:block;flex:1 1 0;width:100%;max-width:100%;height:0;min-width:0;min-height:0;border:0;background:white;overflow:hidden}
 
     @media(max-width:600px){.topbar{padding:20px 20px}main{min-height:calc(100vh - 72px);padding-bottom:10vh}.content{margin-top:-7vh}.search-shell{gap:7px;padding-left:13px}.go{padding:13px 16px}#address{font-size:12px}.moon{right:-2%;top:13%;width:180px;opacity:.75}.tree-line{height:48%}}
     @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
@@ -138,7 +138,7 @@
       <button type="button" id="browserClose" aria-label="close browser">×</button>
     </div>
     <p id="browserStatus" role="status">starting autumn browser...</p>
-    <iframe id="browserFrame" title="autumn web view"></iframe>
+    <iframe id="browserFrame" title="autumn web view" referrerpolicy="no-referrer"></iframe>
   </section>
   <script>
     (() => {
