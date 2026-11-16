@@ -1,12 +1,3 @@
-import LibcurlClient from "@mercuryworkshop/libcurl-transport";
-import { Controller } from "@mercuryworkshop/scramjet-controller";
-import { defaultConfigDev } from "@mercuryworkshop/scramjet";
-import {
-  HttpCachePlugin,
-  UrlWatcherPlugin,
-  CatchEscapedLinksPlugin
-} from "@mercuryworkshop/scramjet-utils";
-
 const BASE = "/nature/";
 const WISP_URL = "wss://autumn.wisp.uno/wisp/";
 const TICKET_URL = "https://autumn.wisp.uno/ticket";
@@ -25,37 +16,20 @@ const browserFrame = document.getElementById("browserFrame");
 
 let controller = null;
 let frame = null;
-let runtimePromise = null;
+let bootPromise = null;
+let keepalive = null;
 
 provider.value = localStorage.getItem("autumn-search-provider") || "brave";
 provider.addEventListener("change", () => {
   localStorage.setItem("autumn-search-provider", provider.value);
 });
 
-const savedWisp = (() => {
-  const old = localStorage.getItem("autumn-wisp-url");
-  const current = old && old.includes("autumn.wisp.uno")
-    ? old.replace("autumn.wisp.uno:14497", "autumn.wisp.uno")
-    : WISP_URL;
-  localStorage.setItem("autumn-wisp-url", current);
-  return current;
-})();
-wispInput.value = savedWisp;
-
-document.getElementById("settingsToggle").addEventListener("click", () => {
-  panel.classList.toggle("open");
-});
-document.getElementById("closeSettings").addEventListener("click", () => {
-  panel.classList.remove("open");
-});
+wispInput.value = WISP_URL;
+document.getElementById("settingsToggle").addEventListener("click", () => panel.classList.toggle("open"));
+document.getElementById("closeSettings").addEventListener("click", () => panel.classList.remove("open"));
 document.getElementById("saveSettings").addEventListener("click", () => {
-  const value = wispInput.value.trim();
-  if (value !== WISP_URL) {
-    status.textContent = "the secure autumn connection is managed by the backend.";
-    wispInput.value = WISP_URL;
-    return;
-  }
-  localStorage.setItem("autumn-wisp-url", value);
+  wispInput.value = WISP_URL;
+  localStorage.setItem("autumn-wisp-url", WISP_URL);
   status.textContent = "secure connection address confirmed.";
   panel.classList.remove("open");
 });
@@ -75,95 +49,111 @@ function normalizeTarget(value) {
   const input = value.trim();
   if (!input) throw new Error("enter a website or search term first.");
   if (/^https?:\/\//i.test(input)) return input;
-  if (/^[a-z0-9-]+(\.[a-z0-9-]+)+([/:?#]|$)/i.test(input)) {
-    return "https://" + input;
-  }
+  if (/^[a-z0-9-]+(\.[a-z0-9-]+)+([/:?#]|$)/i.test(input)) return "https://" + input;
   return searchUrl(input);
 }
 
-async function getTemporaryTicket() {
-  const response = await fetch(TICKET_URL, {
-    method: "POST",
-    cache: "no-store"
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("could not load runtime file: " + src));
+    document.head.append(script);
   });
-  const body = await response.text();
-  if (!response.ok) {
-    throw new Error("ticket request failed (HTTP " + response.status + "): " + body.slice(0, 180));
-  }
+}
 
+function waitForServiceWorkerControl(registration) {
+  if (navigator.serviceWorker.controller) return Promise.resolve(navigator.serviceWorker.controller);
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      navigator.serviceWorker.removeEventListener("controllerchange", changed);
+      reject(new Error("service worker did not take control. Reload Autumn and try again."));
+    }, 12000);
+    function changed() {
+      clearTimeout(timeout);
+      resolve(navigator.serviceWorker.controller || registration.active);
+    }
+    navigator.serviceWorker.addEventListener("controllerchange", changed, { once: true });
+  });
+}
+
+async function getTemporaryTicket() {
+  const response = await fetch(TICKET_URL, { method: "POST", cache: "no-store" });
+  const body = await response.text();
+  if (!response.ok) throw new Error("ticket request failed (HTTP " + response.status + "): " + body.slice(0, 160));
   let data;
-  try {
-    data = JSON.parse(body);
-  } catch {
-    throw new Error("ticket endpoint returned invalid JSON.");
-  }
+  try { data = JSON.parse(body); }
+  catch { throw new Error("ticket endpoint returned invalid JSON."); }
   if (!data.ticket) throw new Error("ticket endpoint did not issue a ticket.");
   return data.ticket;
 }
 
 async function initializeRuntime() {
   if (controller) return;
-  if (runtimePromise) return runtimePromise;
+  if (bootPromise) return bootPromise;
 
-  runtimePromise = (async () => {
-    browserStatus.textContent = "registering the browsing service worker...";
-    if (!("serviceWorker" in navigator)) {
-      throw new Error("this browser does not support service workers.");
-    }
+  bootPromise = (async () => {
+    if (!("serviceWorker" in navigator)) throw new Error("service workers are not supported in this browser.");
 
+    browserStatus.textContent = "registering the Scramjet service worker...";
     const registration = await navigator.serviceWorker.register(BASE + "sw.js", {
-      scope: BASE
+      scope: BASE,
+      updateViaCache: "none"
     });
     await navigator.serviceWorker.ready;
+    const serviceworker = await waitForServiceWorkerControl(registration);
+    if (!serviceworker) throw new Error("Scramjet service worker is unavailable.");
 
-    const serviceworker = navigator.serviceWorker.controller || registration.active;
-    if (!serviceworker) {
-      throw new Error("the Scramjet service worker did not become active. Reload Autumn and try again.");
+    browserStatus.textContent = "loading Scramjet runtime...";
+    await loadScript(BASE + "scram/scramjet.js");
+    await loadScript(BASE + "controller/controller.api.js");
+    await loadScript(BASE + "utils/scramjet-utils.js");
+
+    if (!window.$scramjetController?.Controller) {
+      throw new Error("Scramjet controller API did not load.");
     }
 
-    browserStatus.textContent = "requesting a short-lived secure connection ticket...";
+    browserStatus.textContent = "requesting a temporary secure ticket...";
     const ticket = await getTemporaryTicket();
     const wisp = new URL(WISP_URL);
     wisp.searchParams.set("ticket", ticket);
 
-    browserStatus.textContent = "connecting Scramjet to the Wisp transport...";
+    browserStatus.textContent = "connecting to the secure Wisp transport...";
+    const { default: LibcurlClient } = await import(BASE + "libcurl/index.mjs");
     const transport = new LibcurlClient({ wisp: wisp.toString() });
-    controller = new Controller({
+
+    controller = new window.$scramjetController.Controller({
       serviceworker,
       transport,
-      scramjetConfig: defaultConfigDev
+      config: {
+        prefix: BASE + "~/sj/",
+        scramjetPath: BASE + "scram/scramjet.js",
+        wasmPath: BASE + "scram/scramjet.wasm",
+        injectPath: BASE + "controller/controller.inject.js"
+      }
     });
 
     await controller.wait();
-
-    const cachePlugin = new HttpCachePlugin();
-    const urlWatcher = new UrlWatcherPlugin((url) => {
-      browserAddress.value = url.href;
-    });
-    const escapedLinks = new CatchEscapedLinksPlugin((url) =>
-      new URL(BASE + "?goto=" + encodeURIComponent(url.href), location.origin)
-    );
-
-    frame = controller.createFrame(browserFrame, {
-      plugins: [cachePlugin, urlWatcher, escapedLinks]
-    });
-
+    frame = controller.createFrame(browserFrame);
+    keepalive = window.setInterval(() => {
+      navigator.serviceWorker.controller?.postMessage("keepalive");
+    }, 15000);
     browserStatus.textContent = "autumn browser is ready.";
   })();
 
   try {
-    await runtimePromise;
+    await bootPromise;
   } catch (error) {
-    runtimePromise = null;
+    bootPromise = null;
     controller = null;
     throw error;
   }
 }
 
 async function navigate(value) {
-  let target;
   try {
-    target = normalizeTarget(value);
+    const target = normalizeTarget(value);
     browserShell.hidden = false;
     browserAddress.value = target;
     browserStatus.textContent = "starting autumn browser...";
@@ -173,30 +163,25 @@ async function navigate(value) {
   } catch (error) {
     browserShell.hidden = false;
     browserStatus.textContent = "could not open page: " + error.message;
-    console.error("[Autumn] navigation error:", error);
+    console.error("[Autumn]", error);
   }
 }
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", event => {
   event.preventDefault();
   navigate(address.value);
 });
-
-browserForm.addEventListener("submit", (event) => {
+browserForm.addEventListener("submit", event => {
   event.preventDefault();
   navigate(browserAddress.value);
 });
 
-document.getElementById("browserBack").addEventListener("click", () => frame?.back());
-document.getElementById("browserForward").addEventListener("click", () => frame?.forward());
-document.getElementById("browserReload").addEventListener("click", () => frame?.reload());
+document.getElementById("browserBack").addEventListener("click", () => frame?.back?.());
+document.getElementById("browserForward").addEventListener("click", () => frame?.forward?.());
+document.getElementById("browserReload").addEventListener("click", () => frame?.reload?.());
 document.getElementById("browserHome").addEventListener("click", () => navigate("https://search.brave.com"));
-document.getElementById("browserClose").addEventListener("click", () => {
-  browserShell.hidden = true;
-});
-document.querySelectorAll("[data-url]").forEach((button) => {
-  button.addEventListener("click", () => navigate(button.dataset.url));
-});
+document.getElementById("browserClose").addEventListener("click", () => { browserShell.hidden = true; });
+document.querySelectorAll("[data-url]").forEach(button => button.addEventListener("click", () => navigate(button.dataset.url)));
 
 const goto = new URL(location.href).searchParams.get("goto");
 if (goto) {
