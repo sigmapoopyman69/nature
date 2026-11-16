@@ -5,23 +5,17 @@ import { createRequire } from "node:module";
 import { dirname } from "node:path";
 
 const require = createRequire(import.meta.url);
-// The published controller package does not expose its source-tree /path
-// export in every release, so resolve its installed module directory.
-const controllerPath = dirname(
-  require.resolve("@mercuryworkshop/scramjet-controller")
-);
-const libcurlPath = dirname(
-  require.resolve("@mercuryworkshop/libcurl-transport")
-);
+const packageDir = (name) => dirname(require.resolve(name));
 
 export default defineConfig({
   base: "/nature/",
   plugins: [
     viteStaticCopy({
       targets: [
-        { src: `${scramjetPath}/*`, dest: "scramjet" },
-        { src: `${controllerPath}/*`, dest: "controller" },
-        { src: `${libcurlPath}/*`, dest: "libcurl" }
+        { src: `${scramjetPath}/*`, dest: "scram" },
+        { src: `${packageDir("@mercuryworkshop/scramjet-controller")}/*`, dest: "controller" },
+        { src: `${packageDir("@mercuryworkshop/scramjet-utils")}/*`, dest: "utils" },
+        { src: `${packageDir("@mercuryworkshop/libcurl-transport")}/*`, dest: "libcurl" }
       ]
     })
   ]
