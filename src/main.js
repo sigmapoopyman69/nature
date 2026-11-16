@@ -93,15 +93,35 @@ function loadScript(src) {
 }
 
 function waitForServiceWorkerControl(registration) {
-  if (navigator.serviceWorker.controller) return Promise.resolve(navigator.serviceWorker.controller);
+  if (navigator.serviceWorker.controller) {
+    try { sessionStorage.removeItem("autumn-sw-reload-attempt"); } catch {}
+    return Promise.resolve(navigator.serviceWorker.controller);
+  }
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       navigator.serviceWorker.removeEventListener("controllerchange", changed);
-      reject(new Error("service worker did not take control. Reload Autumn and try again."));
-    }, 12000);
+      const active = registration.active;
+      // On a first visit, an already-activated worker may not claim this
+      // document until it is loaded again. Reload once, never in a loop.
+      if (active && active.state === "activated") {
+        let attempted = false;
+        try {
+          attempted = sessionStorage.getItem("autumn-sw-reload-attempt") === "1";
+          if (!attempted) sessionStorage.setItem("autumn-sw-reload-attempt", "1");
+        } catch { attempted = true; }
+        if (!attempted) {
+          location.reload();
+          return;
+        }
+      }
+      reject(new Error("service worker is active but this page is not controlled. Check that /nature/sw.js is available, then reopen Autumn."));
+    }, 7000);
     function changed() {
       clearTimeout(timeout);
-      resolve(navigator.serviceWorker.controller || registration.active);
+      try { sessionStorage.removeItem("autumn-sw-reload-attempt"); } catch {}
+      const worker = navigator.serviceWorker.controller;
+      if (worker) resolve(worker);
+      else reject(new Error("service worker changed, but the page is still not controlled."));
     }
     navigator.serviceWorker.addEventListener("controllerchange", changed, { once: true });
   });
