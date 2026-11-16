@@ -50,9 +50,22 @@ function searchUrl(query) {
 function normalizeTarget(value) {
   const input = value.trim();
   if (!input) throw new Error("enter a website or search term first.");
-  if (/^https?:\/\//i.test(input)) return input;
-  if (/^[a-z0-9-]+(\.[a-z0-9-]+)+([/:?#]|$)/i.test(input)) return "https://" + input;
-  return searchUrl(input);
+
+  let target;
+  if (/^https?:\/\//i.test(input)) target = input;
+  else if (/^[a-z0-9-]+(\.[a-z0-9-]+)+([/:?#]|$)/i.test(input)) target = "https://" + input;
+  else target = searchUrl(input);
+
+  const url = new URL(target);
+  // Ask YouTube for its English (US) interface instead of inheriting a
+  // Romanian or other browser/account locale on the first navigation.
+  if (/(^|\.)youtube\.com$/i.test(url.hostname) ||
+      /(^|\.)youtube-nocookie\.com$/i.test(url.hostname)) {
+    url.searchParams.set("hl", "en");
+    url.searchParams.set("gl", "US");
+    url.searchParams.set("persist_hl", "1");
+  }
+  return url.href;
 }
 
 function loadScript(src) {
