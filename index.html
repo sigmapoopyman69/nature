@@ -58,6 +58,17 @@
     .settings input{width:100%;border:1px solid var(--line);border-radius:9px;background:#171311;color:var(--cream);padding:11px;font-size:12px;outline:none}
     .settings input:focus{border-color:#d18a55}.settings-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:13px}
     .settings-actions button{border:1px solid var(--line);background:transparent;color:var(--cream);border-radius:8px;padding:8px 12px;font-size:10px;cursor:pointer}.settings-actions .save{background:#c87946;border-color:#c87946;color:#1d120d;font-weight:700}
+
+    .browser-shell{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;background:#100e0d;color:#f6eee4}
+    .browser-shell[hidden]{display:none}
+    .browser-toolbar{display:flex;align-items:center;gap:7px;padding:10px 12px;background:rgba(25,21,19,.97);border-bottom:1px solid rgba(255,235,213,.15)}
+    .browser-toolbar button{flex:none;border:1px solid rgba(255,232,210,.16);border-radius:9px;background:#211a16;color:#f2e6d9;padding:9px 12px;cursor:pointer}
+    .browser-toolbar button:hover{border-color:#d18a55;background:#34241b}
+    #browserAddress{flex:1;min-width:0;border:1px solid rgba(255,232,210,.18);border-radius:9px;background:#171311;color:#fff1e4;padding:10px 12px;outline:none}
+    #browserAddress:focus{border-color:#d18a55}
+    #browserStatus{padding:5px 12px;margin:0;background:#171311;color:#c1afa0;font-size:11px;min-height:24px}
+    #browserFrame{flex:1;width:100%;height:100%;min-height:0;border:0;background:white}
+
     @media(max-width:600px){.topbar{padding:20px 20px}main{min-height:calc(100vh - 72px);padding-bottom:10vh}.content{margin-top:-7vh}.search-shell{gap:7px;padding-left:13px}.go{padding:13px 16px}#address{font-size:12px}.moon{right:-2%;top:13%;width:180px;opacity:.75}.tree-line{height:48%}}
     @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
   </style>
@@ -113,8 +124,26 @@
     <div class="settings-actions"><button type="button" id="closeSettings">close</button><button type="button" class="save" id="saveSettings">save address</button></div>
   </section>
 
-  <script>
-    const form = document.getElementById("searchForm");
+
+  <section class="browser-shell" id="browserShell" hidden aria-label="autumn browser">
+    <div class="browser-toolbar">
+      <button type="button" id="browserBack" aria-label="back">←</button>
+      <button type="button" id="browserForward" aria-label="forward">→</button>
+      <button type="button" id="browserReload" aria-label="reload">↻</button>
+      <button type="button" id="browserHome" aria-label="home">⌂</button>
+      <form id="browserForm" style="display:flex;flex:1;min-width:0;gap:7px">
+        <input id="browserAddress" type="text" autocomplete="off" spellcheck="false" placeholder="enter a website or search..." aria-label="website address">
+        <button type="submit">go</button>
+      </form>
+      <button type="button" id="browserClose" aria-label="close browser">×</button>
+    </div>
+    <p id="browserStatus" role="status">starting autumn browser...</p>
+    <iframe id="browserFrame" title="autumn web view"></iframe>
+  </section>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
+
     const address = document.getElementById("address");
     const status = document.getElementById("status");
     const provider = document.getElementById("provider");
