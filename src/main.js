@@ -121,9 +121,15 @@ async function initializeRuntime() {
     const wisp = new URL(WISP_URL);
     wisp.searchParams.set("ticket", ticket);
 
+    // libcurl-transport validates the configured Wisp URL with endsWith("/").
+    // Keep the ticket query parameter unchanged, while adding a harmless empty
+    // query component after it so the complete URL string ends with a slash.
+    // The request path remains /wisp/ and the backend still reads the same ticket.
+    const authenticatedWispUrl = wisp.toString() + "&/";
+
     browserStatus.textContent = "connecting to the secure Wisp transport...";
     const { default: LibcurlClient } = await import(BASE + "libcurl/index.mjs");
-    const transport = new LibcurlClient({ wisp: wisp.toString() });
+    const transport = new LibcurlClient({ wisp: authenticatedWispUrl });
 
     controller = new window.$scramjetController.Controller({
       serviceworker,
