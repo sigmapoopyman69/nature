@@ -21,48 +21,26 @@ let frame = null;
 let bootPromise = null;
 let keepalive = null;
 
-// Synchronous byte-mask URL codec. No WebCrypto dependency; works in both
-// page and Scramjet worker contexts. This is obfuscation, not secure encryption.
-const AUTUMN_URL_MASK = new TextEncoder().encode("autumn-url-mask-v3");
-
-function autumnUrlBytesToBase64Url(bytes) {
-  let binary = "";
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-}
-
-function autumnUrlBase64UrlToBytes(value) {
-  const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
-  const binary = atob(padded);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
-
-function autumnUrlApplyMask(bytes) {
-  const output = new Uint8Array(bytes.length);
-  for (let i = 0; i < bytes.length; i++) {
-    output[i] = bytes[i] ^ AUTUMN_URL_MASK[i % AUTUMN_URL_MASK.length];
-  }
-  return output;
-}
-
+// Stateless URL-safe Base64 codec. Keeping this pure (no sessionStorage) means
+// Scramjet can use the same encode/decode functions in windows and workers.
+// This is encoding/obfuscation, not encryption.
 function autumnUrlCloakEncode(value) {
-  if (!value) return value;
-  return "m3_" + autumnUrlBytesToBase64Url(autumnUrlApplyMask(new TextEncoder().encode(value)));
-}
-
-function autumnUrlMetadataEncode(value) {
   if (!value) return value;
   const bytes = new TextEncoder().encode(value);
   let binary = "";
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return "a1_" + btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  return "a1_" + btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
 }
 
-function autumnUrlMetadataDecode(value) {
-  if (typeof value !== "string" || !value.startsWith("a1_")) return value;
+function autumnUrlCloakDecode(value) {
+  if (!value) return value;
+  if (!value.startsWith("a1_")) {
+    try { return decodeURIComponent(value); }
+    catch { return value; }
+  }
   try {
     const base64 = value.slice(3).replace(/-/g, "+").replace(/_/g, "/");
     const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
@@ -73,20 +51,6 @@ function autumnUrlMetadataDecode(value) {
   } catch {
     return value;
   }
-}
-
-function autumnUrlCloakDecode(value) {
-  if (!value) return value;
-  if (value.startsWith("m3_")) {
-    try { return new TextDecoder().decode(autumnUrlApplyMask(autumnUrlBase64UrlToBytes(value.slice(3)))); }
-    catch { return value; }
-  }
-  if (value.startsWith("a1_")) {
-    try { return new TextDecoder().decode(autumnUrlBase64UrlToBytes(value.slice(3))); }
-    catch { return value; }
-  }
-  try { return decodeURIComponent(value); }
-  catch { return value; }
 }
 
 provider.value = localStorage.getItem("autumn-search-provider") || "brave";
@@ -240,7 +204,7 @@ async function initializeRuntime() {
         this.tap(scramjetFrame.hooks.fetch.intercept, context => {
           const encodedOrigin = context.parsed.fetchInitiatorOrigin;
           if (typeof encodedOrigin === "string" && encodedOrigin.startsWith("a1_")) {
-            context.parsed.fetchInitiatorOrigin = autumnUrlMetadataDecode(encodedOrigin);
+            context.parsed.fetchInitiatorOrigin = autumnUrlCloakDecode(encodedOrigin);
           }
         });
 
@@ -257,7 +221,7 @@ async function initializeRuntime() {
             const redirectUrl = new URL(locationHeader, globalThis.location.href);
             const initiator = redirectUrl.searchParams.get("$io");
             if (initiator && !initiator.startsWith("a1_")) {
-              redirectUrl.searchParams.set("$io", autumnUrlMetadataEncode(initiator));
+              redirectUrl.searchParams.set("$io", autumnUrlCloakEncode(initiator));
               headers.set("location", redirectUrl.href);
             }
           } catch (error) {
