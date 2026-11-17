@@ -21,74 +21,17 @@ let frame = null;
 let bootPromise = null;
 let keepalive = null;
 
-// Synchronous ChaCha20 URL codec. Scramjet's codec API is synchronous and
-// runs in both window and worker contexts, so WebCrypto's async APIs cannot be
-// used here. A fresh 96-bit nonce is stored with each ciphertext.
-const AUTUMN_CODEC_KEY = new Uint32Array([
-  0x61757475, 0x6d6e2d63, 0x6f646563, 0x2d6b6579,
-  0x9e3779b9, 0x243f6a88, 0xb7e15162, 0x8aed2a6b
-]);
-const AUTUMN_CHACHA_CONST = new Uint32Array([0x61707865, 0x3320646e, 0x79622d32, 0x6b206574]);
+// Synchronous byte-mask URL codec. No WebCrypto dependency; works in both
+// page and Scramjet worker contexts. This is obfuscation, not secure encryption.
+const AUTUMN_URL_MASK = new TextEncoder().encode("autumn-url-mask-v3");
 
-function autumnRotateLeft(value, count) {
-  return (value << count) | (value >>> (32 - count));
-}
-
-function autumnChaChaBlock(nonce, counter) {
-  const state = new Uint32Array(16);
-  state.set(AUTUMN_CHACHA_CONST, 0);
-  state.set(AUTUMN_CODEC_KEY, 4);
-  state[12] = counter >>> 0;
-  state[13] = new DataView(nonce.buffer, nonce.byteOffset, nonce.byteLength).getUint32(0, true);
-  state[14] = new DataView(nonce.buffer, nonce.byteOffset, nonce.byteLength).getUint32(4, true);
-  state[15] = new DataView(nonce.buffer, nonce.byteOffset, nonce.byteLength).getUint32(8, true);
-  const working = new Uint32Array(state);
-
-  const quarterRound = (a, b, c, d) => {
-    working[a] = (working[a] + working[b]) >>> 0;
-    working[d] = autumnRotateLeft(working[d] ^ working[a], 16);
-    working[c] = (working[c] + working[d]) >>> 0;
-    working[b] = autumnRotateLeft(working[b] ^ working[c], 12);
-    working[a] = (working[a] + working[b]) >>> 0;
-    working[d] = autumnRotateLeft(working[d] ^ working[a], 8);
-    working[c] = (working[c] + working[d]) >>> 0;
-    working[b] = autumnRotateLeft(working[b] ^ working[c], 7);
-  };
-
-  for (let i = 0; i < 10; i++) {
-    quarterRound(0, 4, 8, 12);
-    quarterRound(1, 5, 9, 13);
-    quarterRound(2, 6, 10, 14);
-    quarterRound(3, 7, 11, 15);
-    quarterRound(0, 5, 10, 15);
-    quarterRound(1, 6, 11, 12);
-    quarterRound(2, 7, 8, 13);
-    quarterRound(3, 4, 9, 14);
-  }
-
-  const output = new Uint8Array(64);
-  const view = new DataView(output.buffer);
-  for (let i = 0; i < 16; i++) view.setUint32(i * 4, (working[i] + state[i]) >>> 0, true);
-  return output;
-}
-
-function autumnUrlCloakTransform(input, nonce) {
-  const output = new Uint8Array(input.length);
-  for (let offset = 0, counter = 0; offset < input.length; offset += 64, counter++) {
-    const block = autumnChaChaBlock(nonce, counter);
-    const count = Math.min(64, input.length - offset);
-    for (let i = 0; i < count; i++) output[offset + i] = input[offset + i] ^ block[i];
-  }
-  return output;
-}
-
-function autumnBytesToBase64Url(bytes) {
+function autumnUrlBytesToBase64Url(bytes) {
   let binary = "";
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-function autumnBase64UrlToBytes(value) {
+function autumnUrlBase64UrlToBytes(value) {
   const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
   const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
   const binary = atob(padded);
@@ -97,37 +40,31 @@ function autumnBase64UrlToBytes(value) {
   return bytes;
 }
 
+function autumnUrlApplyMask(bytes) {
+  const output = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) {
+    output[i] = bytes[i] ^ AUTUMN_URL_MASK[i % AUTUMN_URL_MASK.length];
+  }
+  return output;
+}
+
 function autumnUrlCloakEncode(value) {
   if (!value) return value;
-  const nonce = new Uint8Array(12);
-  crypto.getRandomValues(nonce);
-  const plain = new TextEncoder().encode(value);
-  const cipher = autumnUrlCloakTransform(plain, nonce);
-  const payload = new Uint8Array(nonce.length + cipher.length);
-  payload.set(nonce, 0);
-  payload.set(cipher, nonce.length);
-  return "c2_" + autumnBytesToBase64Url(payload);
+  return "m3_" + autumnUrlBytesToBase64Url(autumnUrlApplyMask(new TextEncoder().encode(value)));
 }
 
 function autumnUrlCloakDecode(value) {
   if (!value) return value;
-  if (!value.startsWith("c2_")) {
-    if (value.startsWith("a1_")) {
-      try { return new TextDecoder().decode(autumnBase64UrlToBytes(value.slice(3))); }
-      catch { return value; }
-    }
-    try { return decodeURIComponent(value); }
+  if (value.startsWith("m3_")) {
+    try { return new TextDecoder().decode(autumnUrlApplyMask(autumnUrlBase64UrlToBytes(value.slice(3)))); }
     catch { return value; }
   }
-  try {
-    const payload = autumnBase64UrlToBytes(value.slice(3));
-    if (payload.length < 12) return value;
-    const nonce = payload.slice(0, 12);
-    const cipher = payload.slice(12);
-    return new TextDecoder().decode(autumnUrlCloakTransform(cipher, nonce));
-  } catch {
-    return value;
+  if (value.startsWith("a1_")) {
+    try { return new TextDecoder().decode(autumnUrlBase64UrlToBytes(value.slice(3))); }
+    catch { return value; }
   }
+  try { return decodeURIComponent(value); }
+  catch { return value; }
 }
 
 provider.value = localStorage.getItem("autumn-search-provider") || "brave";
@@ -280,7 +217,7 @@ async function initializeRuntime() {
 
         this.tap(scramjetFrame.hooks.fetch.intercept, context => {
           const encodedOrigin = context.parsed.fetchInitiatorOrigin;
-          if (typeof encodedOrigin === "string" && (encodedOrigin.startsWith("c2_") || encodedOrigin.startsWith("a1_"))) {
+          if (typeof encodedOrigin === "string" && (encodedOrigin.startsWith("m3_") || encodedOrigin.startsWith("a1_"))) {
             context.parsed.fetchInitiatorOrigin = autumnUrlCloakDecode(encodedOrigin);
           }
         });
@@ -297,7 +234,7 @@ async function initializeRuntime() {
           try {
             const redirectUrl = new URL(locationHeader, globalThis.location.href);
             const initiator = redirectUrl.searchParams.get("$io");
-            if (initiator && !initiator.startsWith("c2_") && !initiator.startsWith("a1_")) {
+            if (initiator && !initiator.startsWith("m3_") && !initiator.startsWith("a1_")) {
               redirectUrl.searchParams.set("$io", autumnUrlCloakEncode(initiator));
               headers.set("location", redirectUrl.href);
             }
