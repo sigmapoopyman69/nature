@@ -53,6 +53,28 @@ function autumnUrlCloakEncode(value) {
   return "m3_" + autumnUrlBytesToBase64Url(autumnUrlApplyMask(new TextEncoder().encode(value)));
 }
 
+function autumnUrlMetadataEncode(value) {
+  if (!value) return value;
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return "a1_" + btoa(binary).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
+}
+
+function autumnUrlMetadataDecode(value) {
+  if (typeof value !== "string" || !value.startsWith("a1_")) return value;
+  try {
+    const base64 = value.slice(3).replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
+    const binary = atob(padded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return value;
+  }
+}
+
 function autumnUrlCloakDecode(value) {
   if (!value) return value;
   if (value.startsWith("m3_")) {
@@ -217,8 +239,8 @@ async function initializeRuntime() {
 
         this.tap(scramjetFrame.hooks.fetch.intercept, context => {
           const encodedOrigin = context.parsed.fetchInitiatorOrigin;
-          if (typeof encodedOrigin === "string" && (encodedOrigin.startsWith("m3_") || encodedOrigin.startsWith("a1_"))) {
-            context.parsed.fetchInitiatorOrigin = autumnUrlCloakDecode(encodedOrigin);
+          if (typeof encodedOrigin === "string" && encodedOrigin.startsWith("a1_")) {
+            context.parsed.fetchInitiatorOrigin = autumnUrlMetadataDecode(encodedOrigin);
           }
         });
 
@@ -234,8 +256,8 @@ async function initializeRuntime() {
           try {
             const redirectUrl = new URL(locationHeader, globalThis.location.href);
             const initiator = redirectUrl.searchParams.get("$io");
-            if (initiator && !initiator.startsWith("m3_") && !initiator.startsWith("a1_")) {
-              redirectUrl.searchParams.set("$io", autumnUrlCloakEncode(initiator));
+            if (initiator && !initiator.startsWith("a1_")) {
+              redirectUrl.searchParams.set("$io", autumnUrlMetadataEncode(initiator));
               headers.set("location", redirectUrl.href);
             }
           } catch (error) {
