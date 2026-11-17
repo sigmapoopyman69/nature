@@ -280,7 +280,7 @@ async function initializeRuntime() {
 
         this.tap(scramjetFrame.hooks.fetch.intercept, context => {
           const encodedOrigin = context.parsed.fetchInitiatorOrigin;
-          if (typeof encodedOrigin === "string" && encodedOrigin.startsWith("a1_")) {
+          if (typeof encodedOrigin === "string" && (encodedOrigin.startsWith("c2_") || encodedOrigin.startsWith("a1_"))) {
             context.parsed.fetchInitiatorOrigin = autumnUrlCloakDecode(encodedOrigin);
           }
         });
@@ -297,7 +297,7 @@ async function initializeRuntime() {
           try {
             const redirectUrl = new URL(locationHeader, globalThis.location.href);
             const initiator = redirectUrl.searchParams.get("$io");
-            if (initiator && !initiator.startsWith("a1_")) {
+            if (initiator && !initiator.startsWith("c2_") && !initiator.startsWith("a1_")) {
               redirectUrl.searchParams.set("$io", autumnUrlCloakEncode(initiator));
               headers.set("location", redirectUrl.href);
             }
