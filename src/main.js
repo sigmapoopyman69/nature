@@ -21,6 +21,38 @@ let frame = null;
 let bootPromise = null;
 let keepalive = null;
 
+// Stateless URL-safe Base64 codec. Keeping this pure (no sessionStorage) means
+// Scramjet can use the same encode/decode functions in windows and workers.
+// This is encoding/obfuscation, not encryption.
+function autumnUrlCloakEncode(value) {
+  if (!value) return value;
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return "a1_" + btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function autumnUrlCloakDecode(value) {
+  if (!value) return value;
+  if (!value.startsWith("a1_")) {
+    try { return decodeURIComponent(value); }
+    catch { return value; }
+  }
+  try {
+    const base64 = value.slice(3).replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
+    const binary = atob(padded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return value;
+  }
+}
+
 provider.value = localStorage.getItem("autumn-search-provider") || "brave";
 provider.addEventListener("change", () => {
   localStorage.setItem("autumn-search-provider", provider.value);
@@ -50,9 +82,24 @@ function searchUrl(query) {
 function normalizeTarget(value) {
   const input = value.trim();
   if (!input) throw new Error("enter a website or search term first.");
-  if (/^https?:\/\//i.test(input)) return input;
-  if (/^[a-z0-9-]+(\.[a-z0-9-]+)+([/:?#]|$)/i.test(input)) return "https://" + input;
-  return searchUrl(input);
+
+  let target;
+  if (/^https?:\/\//i.test(input)) target = input;
+  else if (/^[a-z0-9-]+(\.[a-z0-9-]+)+([/:?#]|$)/i.test(input)) target = "https://" + input;
+  else target = searchUrl(input);
+
+  const url = new URL(target);
+  if (
+    url.hostname === "youtube.com" ||
+    url.hostname.endsWith(".youtube.com") ||
+    url.hostname === "youtube-nocookie.com" ||
+    url.hostname.endsWith(".youtube-nocookie.com")
+  ) {
+    url.searchParams.set("hl", "en");
+    url.searchParams.set("gl", "US");
+    url.searchParams.set("persist_hl", "1");
+  }
+  return url.href;
 }
 
 function loadScript(src) {
@@ -143,6 +190,47 @@ async function initializeRuntime() {
       }
     }
 
+    // Encode Scramjet's redirect initiator metadata in the visible proxy URL.
+    // Restore it after request parsing so fetch metadata and redirects still
+    // receive the original origin.
+    class UrlMetadataCodecPlugin extends ControllerAPI.ManagedPlugin {
+      constructor() {
+        super("autumn-url-metadata-codec", []);
+      }
+
+      install(scramjetFrame) {
+        super.install(scramjetFrame);
+
+        this.tap(scramjetFrame.hooks.fetch.intercept, context => {
+          const encodedOrigin = context.parsed.fetchInitiatorOrigin;
+          if (typeof encodedOrigin === "string" && encodedOrigin.startsWith("a1_")) {
+            context.parsed.fetchInitiatorOrigin = autumnUrlCloakDecode(encodedOrigin);
+          }
+        });
+
+        this.tap(scramjetFrame.hooks.fetch.response, (_context, props) => {
+          const response = props.response;
+          const headers = response?.headers;
+          if (!headers || typeof headers.get !== "function" || typeof headers.set !== "function") return;
+          if (![301, 302, 303, 307, 308].includes(response.status)) return;
+
+          const locationHeader = headers.get("location");
+          if (!locationHeader) return;
+
+          try {
+            const redirectUrl = new URL(locationHeader, globalThis.location.href);
+            const initiator = redirectUrl.searchParams.get("$io");
+            if (initiator && !initiator.startsWith("a1_")) {
+              redirectUrl.searchParams.set("$io", autumnUrlCloakEncode(initiator));
+              headers.set("location", redirectUrl.href);
+            }
+          } catch (error) {
+            console.warn("[Autumn] Could not encode redirect metadata:", error);
+          }
+        });
+      }
+    }
+
     browserStatus.textContent = "requesting a temporary secure ticket...";
     const ticket = await getTemporaryTicket();
     const wisp = new URL(WISP_URL);
@@ -163,6 +251,10 @@ async function initializeRuntime() {
       transport,
       config: {
         prefix: BASE + "~/sj/",
+        codec: {
+          encode: autumnUrlCloakEncode,
+          decode: autumnUrlCloakDecode
+        },
         scramjetPath: BASE + "scram/scramjet.js",
         wasmPath: BASE + "scram/scramjet.wasm",
         injectPath: BASE + "controller/controller.inject.js"
@@ -176,6 +268,7 @@ async function initializeRuntime() {
     frame = controller.createFrame(browserFrame, {
       plugins: [
         new HistoryCompatibilityPlugin(),
+        new UrlMetadataCodecPlugin(),
         new ScramjetUtils.UrlWatcherPlugin(url => {
           browserAddress.value = url;
         }),
